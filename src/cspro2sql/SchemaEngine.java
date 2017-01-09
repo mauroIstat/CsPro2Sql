@@ -44,8 +44,9 @@ public class SchemaEngine {
         
     }
     
-    static void execute(Dictionary dictionary, String schema, PrintStream out) {
+    static boolean execute(Dictionary dictionary, String schema, PrintStream out) {
         SchemaWriter.write(schema, dictionary, out);
+        return true;
     }
 
 }

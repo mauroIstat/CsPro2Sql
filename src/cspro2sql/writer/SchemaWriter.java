@@ -121,6 +121,7 @@ public class SchemaWriter {
         ps.println("    DATE TIMESTAMP NOT NULL,");
         ps.println("    CSPRO_GUID BINARY(16) NOT NULL,");
         ps.println("    QUESTIONNAIRE LONGTEXT NOT NULL,");
+        ps.println("    SQL_SCRIPT LONGTEXT NOT NULL,");
         ps.println("    PRIMARY KEY (ID)");
         ps.println(") ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
         ps.println();

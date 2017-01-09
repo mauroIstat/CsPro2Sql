@@ -18,6 +18,7 @@ import org.apache.commons.cli.ParseException;
  * CsPro2Sql -e schema -d DICTIONARY_FILE -s SCHEMA_NAME [options]
  * CsPro2Sql -e loader [-p PROPERTIES_FILE]
  * 
+ *  -a,--all                   transers all the records (modified time not considered)
  *  -d,--dictionary <arg>      path to the dictionary file
  *  -e,--engine <arg>          select engine: [loader|schema]
  *  -h,--help                  display help
@@ -33,6 +34,7 @@ public class Main {
     public static void main(String[] args) {
         //Get command line options
         CsPro2SqlOptions opts = getCommandLineOptions(args);
+        boolean error = false;
 
         if (opts.schemaEngine) {
             //Parse the dictionary
@@ -45,7 +47,7 @@ public class Main {
             }
             //Execute the schema engine
             try {
-                SchemaEngine.execute(dictionary, opts.schema, opts.ps);
+                error = !SchemaEngine.execute(dictionary, opts.schema, opts.ps);
             } catch (Exception ex) {
                 opts.printHelp("Impossible to create the datatabse schema ("+ex.getMessage()+")");
             } finally {
@@ -53,10 +55,9 @@ public class Main {
             }
         } else {
             //Execute the loader engine
-            System.out.println("Starting data transfer from CsPro to MySql...");
-            LoaderEngine.execute(opts.propertiesFile);
-            System.out.println("Data transfer completed!");
+            error = !LoaderEngine.execute(opts.propertiesFile, opts.allRecords);
         }
+        if (error) System.exit(1);
     }
 
     private static CsPro2SqlOptions getCommandLineOptions(String[] args) {
@@ -68,6 +69,7 @@ public class Main {
         options.addOption("s", "schema", true, "name of database schema");
         options.addOption("e", "engine", true, "select engine: [loader|schema]");
         options.addOption("p", "properties", true, "database.properties file (default resources/database.properties)");
+        options.addOption("a", "all", false, "transers all the records (modified time not considered)");
 
         CsPro2SqlOptions opts = new CsPro2SqlOptions();
         opts.options = options;
@@ -111,8 +113,11 @@ public class Main {
                     opts.ps = new PrintStream(cmd.getOptionValue("o"));
                 }
             } else {
-                if (cmd.hasOption("p")) { //Output file name provided
+                if (cmd.hasOption("p")) {
                     opts.propertiesFile = cmd.getOptionValue("p");
+                }
+                if (cmd.hasOption("a")) {
+                    opts.allRecords = true;
                 }
             }
         } catch (ParseException | FileNotFoundException e) {
@@ -131,6 +136,7 @@ public class Main {
         String propertiesFile = "resources/database.properties";
         PrintStream ps = System.out;
         Options options;
+        boolean allRecords = false;
         
         void printHelp() {
             printHelp(null);

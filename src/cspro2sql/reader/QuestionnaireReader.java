@@ -45,29 +45,33 @@ public class QuestionnaireReader {
     }
 
     private static void parseItem(Item item, String row, List<String> values) {
-        String v = row.substring(item.getStart() - 1, item.getStart() - 1 + item.getLength());
-        if (v.trim().isEmpty()) {
+        if (row.length()<item.getStart() - 1 + item.getLength()) {
             values.add(null);
         } else {
-            switch (item.getDataType()) {
-                case "Number":
-                    if (item.getDecimal() > 0 && !item.hasDecimalChar()) {
-                        String head = v.substring(0, v.length() - item.getDecimal()).trim();
-                        if (head.isEmpty()) {
-                            head = "0";
+            String v = row.substring(item.getStart() - 1, item.getStart() - 1 + item.getLength());
+            if (v.trim().isEmpty()) {
+                values.add(null);
+            } else {
+                switch (item.getDataType()) {
+                    case "Number":
+                        if (item.getDecimal() > 0 && !item.hasDecimalChar()) {
+                            String head = v.substring(0, v.length() - item.getDecimal()).trim();
+                            if (head.isEmpty()) {
+                                head = "0";
+                            }
+                            String tail = v.substring(v.length() - item.getDecimal()).trim();
+                            if (tail.isEmpty()) {
+                                tail = "0";
+                            }
+                            values.add(head + "." + tail);
+                        } else {
+                            values.add(v);
                         }
-                        String tail = v.substring(v.length() - item.getDecimal()).trim();
-                        if (tail.isEmpty()) {
-                            tail = "0";
-                        }
-                        values.add(head + "." + tail);
-                    } else {
-                        values.add(v);
-                    }
-                    break;
-                case "Alpha":
-                    values.add("\"" + v + "\"");
-                    break;
+                        break;
+                    case "Alpha":
+                        values.add("\"" + v + "\"");
+                        break;
+                }
             }
         }
         for (Item subItem : item.getSubItems()) {

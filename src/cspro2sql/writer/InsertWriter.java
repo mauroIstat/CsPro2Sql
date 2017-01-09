@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public class InsertWriter {
 
-    public static void create(String schema, Dictionary dictionary, Map<Record, List<List<String>>> descr, Statement stmt) throws SQLException {
+    public static void create(String schema, Dictionary dictionary, Map<Record, List<List<String>>> descr, Statement stmt, StringBuilder script) throws SQLException {
         int id = 0;
         boolean exists = false;
         for (Map.Entry<Record, List<List<String>>> e : descr.entrySet()) {
@@ -82,11 +82,14 @@ public class InsertWriter {
             */
             
             if (exists && !record.isMainRecord()) {
+                script.append("delete from ").append(schema).append(".").append(record.getTableName()).append(" where ").append(record.getMainRecord().getName()).append("=").append(id).append(";\n");
                 stmt.executeUpdate("delete from " + schema + "." + record.getTableName() +
                         " where " + record.getMainRecord().getName() + "=" + id);
             }
+            script.append(sql).append(";\n");
             stmt.executeUpdate(sql);
             if (record.isMainRecord()) {
+                script.append("select last_insert_id()").append(";\n");
                 ResultSet lastInsertId = stmt.executeQuery("select last_insert_id()");
                 lastInsertId.next();
                 id = lastInsertId.getInt(1);
