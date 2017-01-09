@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 public class LoaderEngine {
     
     private static final Logger LOGGER = Logger.getLogger(LoaderEngine.class.getName());
-    private static final SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss");
+    private static final SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static final int RECORDS_LIMIT = 100;
     private static final String ERROR_STMT = "insert into CSPRO2SQL_ERRORS (ERROR, DATE, CSPRO_GUID, QUESTIONNAIRE, SQL_SCRIPT) values (?,?,?,?,?)";
     private static final String LAST_UPDATE_UPDATE_STMT = "update CSPRO2SQL_LASTUPDATE set LAST_UPDATE = ?";
@@ -95,10 +95,6 @@ public class LoaderEngine {
             PreparedStatement errorStmt = connDst.prepareStatement(ERROR_STMT);
             PreparedStatement lastUpdateStmt = connDst.prepareStatement(LAST_UPDATE_INSERT_STMT);
             PreparedStatement selectQuestionnaire;
-            if (allRecords)
-                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from "+srcSchema+"."+srcDataTable+" limit "+RECORDS_LIMIT);
-            else
-                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from "+srcSchema+"."+srcDataTable+" where modified_time >= ?  AND modified_time < ?  limit "+RECORDS_LIMIT);
             
             Timestamp now = new Timestamp(System.currentTimeMillis());
             Timestamp dTimestamp = new Timestamp(0);
@@ -108,13 +104,17 @@ public class LoaderEngine {
                 lastUpdateStmt = connDst.prepareStatement(LAST_UPDATE_UPDATE_STMT);
             }
             
-            System.out.println("Starting data transfer from CsPro to MySql... ["+
-                    SDF.format(dTimestamp)+" -> "+SDF.format(now)+"]");
-
             //Get questionnaires from source database (CSPro plain text files)
             boolean errors = false;
-            selectQuestionnaire.setTimestamp(1, dTimestamp);
-            selectQuestionnaire.setTimestamp(2, now);
+            if (allRecords) {
+                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from "+srcSchema+"."+srcDataTable+" order by guid limit "+RECORDS_LIMIT);
+                System.out.println("Starting data transfer from CsPro to MySql... [all records]");
+            } else {
+                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from "+srcSchema+"."+srcDataTable+" where modified_time >= ?  AND modified_time < ?  order by guid limit "+RECORDS_LIMIT);
+                selectQuestionnaire.setTimestamp(1, dTimestamp);
+                selectQuestionnaire.setTimestamp(2, now);
+                System.out.println("Starting data transfer from CsPro to MySql... ["+SDF.format(dTimestamp)+" -> "+SDF.format(now)+"]");
+            }
             result = selectQuestionnaire.executeQuery();
             while (result.next()) {
                 String questionnaire = result.getString(1);
