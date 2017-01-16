@@ -3,11 +3,10 @@ package cspro2sql.reader;
 
 import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
+import cspro2sql.bean.Questionnaire;
 import cspro2sql.bean.Record;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This class parse a plain text CSPro questionnaire
@@ -17,12 +16,12 @@ import java.util.Map;
 public class QuestionnaireReader {
 
     //Parse a questionnaire (CSPro plain text file) according to its dictionary 
-    public static Map<Record, List<List<String>>> parse(Dictionary dictionary, String questionnaire) {
-        Map<Record, List<List<String>>> result = new LinkedHashMap<>();
+    public static Questionnaire parse(Dictionary dictionary, String questionnaire) {
+        Questionnaire result = new Questionnaire(questionnaire);
         String[] rows = questionnaire.split(Dictionary.DICT_NEWLINE_REGEXP);
         Record record = dictionary.getMainRecord();
         List<List<String>> valuesList = new LinkedList<>();
-        result.put(record, valuesList);
+        result.setRecordValues(record, valuesList);
         List<String> values = new LinkedList<>();
         valuesList.add(values);
         for (Item item : record.getItems()) {
@@ -30,10 +29,10 @@ public class QuestionnaireReader {
         }
         for (String row : rows) {
             record = dictionary.getRecord(row.charAt(0));
-            valuesList = result.get(record);
+            valuesList = result.getRecordValues(record);
             if (valuesList == null) {
                 valuesList = new LinkedList<>();
-                result.put(record, valuesList);
+                result.setRecordValues(record, valuesList);
             }
             values = new LinkedList<>();
             valuesList.add(values);
