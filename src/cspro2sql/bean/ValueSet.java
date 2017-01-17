@@ -15,7 +15,8 @@ public final class ValueSet {
     private String name;
     private String link;
     private int valueLength;
-    private final Map<String,String> values = new LinkedHashMap<>();
+    private boolean notCreated = true;
+    private Map<String,String> values = new LinkedHashMap<>();
 
     public String getLabel() {
         return label;
@@ -64,5 +65,25 @@ public final class ValueSet {
     public boolean isEmpty() {
         return this.values.isEmpty();
     }
+
+    public void setCreated() {
+        this.notCreated = false;
+    }
+
+    public boolean isNotCreated() {
+        return this.notCreated;
+    }
     
+    @Override
+    public ValueSet clone() {
+        ValueSet vs = new ValueSet();
+        vs.label = this.label;    
+        vs.name = this.name;
+        vs.link = this.link;
+        vs.valueLength = this.valueLength;
+        vs.notCreated = this.notCreated;
+        vs.values = this.values;
+        return vs;
+    }
+
 }

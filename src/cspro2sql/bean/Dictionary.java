@@ -99,6 +99,7 @@ public final class Dictionary {
             for (int i=0; i<item.getOccurrences(); i++) {
                 Item it = item.clone();
                 it.setName(it.getName()+"_"+i);
+                it.setValueSetName(item.getName());
                 it.setStart(it.getStart()+i*it.getLength());
                 its.add(it);
             }
@@ -123,7 +124,7 @@ public final class Dictionary {
     public void addValueSet(ValueSet valueSet) {
         if (valueSet.getLink()!=null && !valueSet.getLink().isEmpty() &&
                 valueSets.containsKey(valueSet.getLink())) {
-            valueSet = valueSets.get(valueSet.getLink());
+            valueSet = valueSets.get(valueSet.getLink()).clone();
         } else {
             if (valueSet.isEmpty()) return;
             if (valueSet.getLink()!=null && !valueSet.getLink().isEmpty()) {
@@ -144,7 +145,12 @@ public final class Dictionary {
     
     private void addValueSetToLastItems(ValueSet valueSet) {
         for (Item item : this.lastItems) {
-            item.addValueSet(valueSet);
+            if (ITEM_ALPHA.equals(item.getDataType())) {
+                List<Item> splits = item.splitIntoColumns(valueSet);
+                this.lastRecord.replaceItemWithSplit(item, splits);
+            } else {
+                item.addValueSet(valueSet);
+            }
         }
     }
     

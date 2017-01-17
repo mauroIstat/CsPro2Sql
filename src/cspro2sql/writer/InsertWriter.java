@@ -38,6 +38,10 @@ public class InsertWriter {
                 if (first) first = false;
                 else sql += ",";
                 sql += item.getName();
+                for (Item subitem : item.getSubItems()) {
+                    sql += ",";
+                    sql += subitem.getName();
+                }
             }
             sql += ") values ";
             for (int i=0; i<e.getValue().size(); i++) {

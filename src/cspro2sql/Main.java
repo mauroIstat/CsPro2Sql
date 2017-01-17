@@ -5,6 +5,7 @@ import cspro2sql.bean.Dictionary;
 import cspro2sql.reader.DictionaryReader;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -110,7 +111,7 @@ public class Main {
                 }
 
                 if (cmd.hasOption("o")) { //Output file name provided
-                    opts.ps = new PrintStream(cmd.getOptionValue("o"));
+                    opts.ps = new PrintStream(cmd.getOptionValue("o"),"UTF-8");
                 }
             } else {
                 if (cmd.hasOption("p")) {
@@ -120,7 +121,7 @@ public class Main {
                     opts.allRecords = true;
                 }
             }
-        } catch (ParseException | FileNotFoundException e) {
+        } catch (ParseException | FileNotFoundException | UnsupportedEncodingException e) {
             opts.printHelp();
         }
         //End parsing command line

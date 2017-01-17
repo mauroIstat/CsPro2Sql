@@ -13,6 +13,7 @@ import java.util.Objects;
 public final class Item {
     
     private String name;
+    private String valueSetName;
     private String dataType = "Number";
     private int start; 
     private int length;
@@ -23,8 +24,14 @@ public final class Item {
     private boolean decimalChar;
     private final List<Item> subItems = new ArrayList<>();
     private final List<ValueSet> valueSets = new ArrayList<>();
+
+    public void setValueSetName(String valueSetName) {
+        this.valueSetName = valueSetName;
+    }
     
     public String getValueSetName() {
+        if (valueSetName!=null)
+            return "VS_"+valueSetName;
         return "VS_"+name;
     }
 
@@ -126,6 +133,20 @@ public final class Item {
             len = Math.max(len,vs.getValueLength());
         }
         return len;
+    }
+    
+    public List<Item> splitIntoColumns(ValueSet values) {
+        List<Item> items = new ArrayList<>(getLength());
+        for (int i=0; i<getLength(); i++) {
+            Item c = clone();
+            c.addValueSet(values);
+            c.setName(c.getName()+"_"+i);
+            c.setStart(c.getStart()+i);
+            c.valueSetName = this.name;
+            c.setLength(1);
+            items.add(c);
+        }
+        return items;
     }
 
     @Override

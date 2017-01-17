@@ -86,7 +86,14 @@ public final class BeanFactory {
     
     private static void addValueSetValues(ValueSet valueSet, String s) {
         String[] ss = getValue(s).split(";");
-        ss[1] = ss[1].split("["+Dictionary.DICT_LABEL_LANGUAGE_SEPARATOR+"]")[0];
+        if (ss.length==1) {
+            String tmp = ss[0];
+            ss = new String[2];
+            ss[0] = tmp;
+            ss[1] = tmp;
+        } else {
+            ss[1] = ss[1].split("["+Dictionary.DICT_LABEL_LANGUAGE_SEPARATOR+"]")[0];
+        }
         if (ss[0].contains(":")) {
             int a = Integer.parseInt(ss[0].split(":")[0]);
             int b = Integer.parseInt(ss[0].split(":")[1]);

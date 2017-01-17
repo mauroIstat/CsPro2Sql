@@ -87,6 +87,14 @@ public final class Record {
         return items;
     }
 
+    public void replaceItemWithSplit(Item item, List<Item> split) {
+        int i = items.indexOf(item);
+        for (Item it : split) {
+            items.add(i++, it);
+        }
+        items.remove(i);
+    }
+    
     public Record getMainRecord() {
         return mainRecord;
     }

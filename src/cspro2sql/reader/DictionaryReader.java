@@ -23,7 +23,7 @@ public class DictionaryReader {
                 (isLocalFile?
                     new FileInputStream(fileName):
                     DictionaryReader.class.getResourceAsStream("/"+fileName))) {
-            try (InputStreamReader fr = new InputStreamReader(in)) {
+            try (InputStreamReader fr = new InputStreamReader(in,"UTF-8")) {
                 try (BufferedReader br = new BufferedReader(fr)) {
                     String line;
                     while ( (line=br.readLine())!=null ) {

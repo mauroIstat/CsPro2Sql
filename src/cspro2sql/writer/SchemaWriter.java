@@ -70,7 +70,7 @@ public class SchemaWriter {
     }
     
     private static void printValueSet(String schema, Item item, PrintStream ps) {
-        if (item.hasValueSets()) {
+        if (item.hasValueSets() && item.getValueSets().get(0).isNotCreated()) {
             ps.println("CREATE TABLE " + schema + "." + item.getValueSetName() + " (");
             switch (item.getDataType()) {
                 case Dictionary.ITEM_ALPHA:
@@ -89,7 +89,7 @@ public class SchemaWriter {
             ps.println("INSERT INTO " + schema + "." + item.getValueSetName() + "(ID,VALUE) VALUES ");
             for (int i=0; i<item.getValueSets().size(); i++) {
                 ValueSet valueSet = item.getValueSets().get(i);
-                int j=0;
+                valueSet.setCreated();
                 for (Map.Entry<String, String> e : valueSet.getValues().entrySet()) {
                 	if (keys.contains(e.getKey())) {
                 		continue;
