@@ -18,10 +18,11 @@ import org.apache.commons.cli.ParseException;
  * 
  * CsPro2Sql -e schema -d DICTIONARY_FILE -s SCHEMA_NAME [options]
  * CsPro2Sql -e loader [-p PROPERTIES_FILE]
+ * CsPro2Sql -e monitor -s SCHEMA_NAME [-p PROPERTIES_FILE] [-o OUTPUT_FILE]
  * 
  *  -a,--all                   transers all the records (modified time not considered)
  *  -d,--dictionary <arg>      path to the dictionary file
- *  -e,--engine <arg>          select engine: [loader|schema]
+ *  -e,--engine <arg>          select engine: [loader|schema|monitor]
  *  -h,--help                  display help
  *  -o,--output <arg>          name of the output file containing the script
  *  -p,--properties <arg>      database.properties file (default resources/database.properties)
@@ -54,9 +55,11 @@ public class Main {
             } finally {
                 opts.ps.close();
             }
-        } else {
+        } else if (!opts.monitorEngine) {
             //Execute the loader engine
             error = !LoaderEngine.execute(opts.propertiesFile, opts.allRecords);
+        } else if (opts.monitorEngine) {
+            error = !MonitorEngine.execute(opts.propertiesFile, opts.schema, opts.ps);
         }
         if (error) System.exit(1);
     }
@@ -68,7 +71,7 @@ public class Main {
         options.addOption("tp", "table-prefix", true, "prefix of table names");
         options.addOption("h", "help", false, "display help");
         options.addOption("s", "schema", true, "name of database schema");
-        options.addOption("e", "engine", true, "select engine: [loader|schema]");
+        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor]");
         options.addOption("p", "properties", true, "database.properties file (default resources/database.properties)");
         options.addOption("a", "all", false, "transers all the records (modified time not considered)");
 
@@ -91,7 +94,9 @@ public class Main {
             if ("schema".equals(engine)) {
                 opts.schemaEngine = true;
             } else if ("loader".equals(engine)) {
-                opts.schemaEngine = false;
+                opts.loaderEngine = true;
+            } else if ("monitor".equals(engine)) {
+                opts.monitorEngine = true;
             } else {
                 opts.printHelp("Wrong engine type!");
             }
@@ -113,12 +118,25 @@ public class Main {
                 if (cmd.hasOption("o")) { //Output file name provided
                     opts.ps = new PrintStream(cmd.getOptionValue("o"),"UTF-8");
                 }
-            } else {
+            } else if (opts.loaderEngine) {
                 if (cmd.hasOption("p")) {
                     opts.propertiesFile = cmd.getOptionValue("p");
                 }
                 if (cmd.hasOption("a")) {
                     opts.allRecords = true;
+                }
+            } else if (opts.monitorEngine) {
+                if (!cmd.hasOption("s")) {
+                    opts.printHelp("The database schema is mandatory!");
+                }
+
+                opts.schema = cmd.getOptionValue("s");
+
+                if (cmd.hasOption("p")) {
+                    opts.propertiesFile = cmd.getOptionValue("p");
+                }
+                if (cmd.hasOption("o")) { //Output file name provided
+                    opts.ps = new PrintStream(cmd.getOptionValue("o"),"UTF-8");
                 }
             }
         } catch (ParseException | FileNotFoundException | UnsupportedEncodingException e) {
@@ -130,7 +148,9 @@ public class Main {
     }
 
     private static class CsPro2SqlOptions {
-        boolean schemaEngine; //used to switch between Loader and Schema engines
+        boolean schemaEngine = false; //used to switch between Loader and Schema engines
+        boolean loaderEngine = false;
+        boolean monitorEngine = false;
         String dictFile = "";
         String schema = "";
         String tablePrefix = "";
@@ -148,7 +168,11 @@ public class Main {
             if (errMessage != null) {
                 System.err.println(errMessage);
             }
-            formatter.printHelp("\n\nCsPro2Sql -e schema -d DICTIONARY_FILE -s SCHEMA_NAME [options]\nCsPro2Sql -e loader [-p PROPERTIES_FILE]\n\n", options);
+            formatter.printHelp("\n\n"
+                    + "CsPro2Sql -e schema -d DICTIONARY_FILE -s SCHEMA_NAME [options]\n"
+                    + "CsPro2Sql -e loader [-p PROPERTIES_FILE]\n"
+                    + "CsPro2Sql -e monitor -s SCHEMA_NAME [-p PROPERTIES_FILE] [-o OUTPUT_FILE]\n"
+                    + "\n", options);
             if (errMessage != null) {
                 System.exit(1);
             } else {
