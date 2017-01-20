@@ -28,6 +28,7 @@ import org.apache.commons.cli.ParseException;
  *  -p,--properties <arg>      database.properties file (default resources/database.properties)
  *  -s,--schema <arg>          name of database schema
  *  -tp,--table-prefix <arg>   prefix of table names
+ *  -fk, --foreign-keys        create foreign keys to value sets (default false)
  * 
  * @author Istat Cooperation Unit
  */
@@ -49,13 +50,13 @@ public class Main {
             }
             //Execute the schema engine
             try {
-                error = !SchemaEngine.execute(dictionary, opts.schema, opts.ps);
+                error = !SchemaEngine.execute(dictionary, opts.foreignKeys, opts.schema, opts.ps);
             } catch (Exception ex) {
                 opts.printHelp("Impossible to create the datatabse schema ("+ex.getMessage()+")");
             } finally {
                 opts.ps.close();
             }
-        } else if (!opts.monitorEngine) {
+        } else if (opts.loaderEngine) {
             //Execute the loader engine
             error = !LoaderEngine.execute(opts.propertiesFile, opts.allRecords);
         } else if (opts.monitorEngine) {
@@ -69,6 +70,7 @@ public class Main {
         options.addOption("d", "dictionary", true, "path to the dictionary file");
         options.addOption("o", "output", true, "name of the output file containing the script");
         options.addOption("tp", "table-prefix", true, "prefix of table names");
+        options.addOption("fk", "foreign-keys", true, "create foreign keys to value sets (default false)");
         options.addOption("h", "help", false, "display help");
         options.addOption("s", "schema", true, "name of database schema");
         options.addOption("e", "engine", true, "select engine: [loader|schema|monitor]");
@@ -110,11 +112,11 @@ public class Main {
                 
                 opts.dictFile = cmd.getOptionValue("d");
                 opts.schema = cmd.getOptionValue("s");
+                opts.foreignKeys = cmd.hasOption("fk");
 
                 if (cmd.hasOption("tp")) { //Table name prefix provided
                     opts.tablePrefix = cmd.getOptionValue("tp");
                 }
-
                 if (cmd.hasOption("o")) { //Output file name provided
                     opts.ps = new PrintStream(cmd.getOptionValue("o"),"UTF-8");
                 }
@@ -158,6 +160,7 @@ public class Main {
         PrintStream ps = System.out;
         Options options;
         boolean allRecords = false;
+        boolean foreignKeys = false;
         
         void printHelp() {
             printHelp(null);

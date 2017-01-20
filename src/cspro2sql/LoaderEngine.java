@@ -34,10 +34,10 @@ public class LoaderEngine {
     private static final Logger LOGGER = Logger.getLogger(LoaderEngine.class.getName());
     private static final SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static final int COMMIT_SIZE = 100;
-    private static final String ERROR_STMT = "insert into CSPRO2SQL_ERRORS (ERROR, DATE, CSPRO_GUID, QUESTIONNAIRE, SQL_SCRIPT) values (?,?,?,?,?)";
-    private static final String LAST_UPDATE_UPDATE_STMT = "update CSPRO2SQL_LASTUPDATE set LAST_UPDATE = ?";
-    private static final String LAST_UPDATE_SELECT_STMT = "select LAST_UPDATE from CSPRO2SQL_LASTUPDATE";
-    private static final String LAST_UPDATE_INSERT_STMT = "insert into CSPRO2SQL_LASTUPDATE values (?)";
+    private static final String ERROR_STMT = "insert into CSPRO2SQL_ERRORS (DICTIONARY, ERROR, DATE, CSPRO_GUID, QUESTIONNAIRE, SQL_SCRIPT) values (?,?,?,?,?,?)";
+    private static final String LAST_REVISION_UPDATE_STMT = "update CSPRO2SQL_DICTIONARY set REVISION = ? where ID = ?";
+    private static final String LAST_REVISION_SELECT_STMT = "select ID, REVISION from CSPRO2SQL_DICTIONARY where NAME = ?";
+    private static final String LAST_REVISION_INSERT_STMT = "insert into CSPRO2SQL_DICTIONARY (NAME) values (?)";
 
     public static void main(String[] args) {
         execute("/database.properties", true);
@@ -93,42 +93,65 @@ public class LoaderEngine {
 
             Statement stmtDst = connDst.createStatement();
             PreparedStatement errorStmt = connDst.prepareStatement(ERROR_STMT);
-            PreparedStatement lastUpdateStmt = connDst.prepareStatement(LAST_UPDATE_INSERT_STMT);
+            PreparedStatement selectLastRevisionStmt = connDst.prepareStatement(LAST_REVISION_SELECT_STMT);
+            PreparedStatement dictionaryStmt = connDst.prepareStatement(LAST_REVISION_INSERT_STMT);
+            PreparedStatement lastRevisionUpdateStmt = connDst.prepareStatement(LAST_REVISION_UPDATE_STMT);
+            PreparedStatement getGuidStmt = connSrc.prepareStatement("select guid from " + srcSchema + "." + srcDataTable + " order by guid asc limit 1");
             PreparedStatement selectQuestionnaire;
 
-            Timestamp now = new Timestamp(System.currentTimeMillis());
-            Timestamp dTimestamp = new Timestamp(0);
-            ResultSet result = stmtDst.executeQuery(LAST_UPDATE_SELECT_STMT);
+            int idDictionary;
+            int lastRevision = 0;
+            selectLastRevisionStmt.setString(1, srcDataTable);
+            ResultSet result = selectLastRevisionStmt.executeQuery();
             if (result.next()) {
-                dTimestamp = result.getTimestamp(1);
-                lastUpdateStmt = connDst.prepareStatement(LAST_UPDATE_UPDATE_STMT);
+                idDictionary = result.getInt(1);
+                lastRevision = result.getInt(2);
+            } else {
+                dictionaryStmt.setString(1, srcDataTable);
+                dictionaryStmt.executeUpdate();
+                connDst.commit();
+                result = selectLastRevisionStmt.executeQuery();
+                result.next();
+                idDictionary = result.getInt(1);
+                lastRevision = result.getInt(2);
             }
+            lastRevisionUpdateStmt.setInt(2, idDictionary);
+            // TODO retrieve max revision from source db
+            int maxRevision = 100;
 
             //Get questionnaires from source database (CSPro plain text files)
             boolean errors = false;
+            result = getGuidStmt.executeQuery();
+            if (!result.next()) {
+                System.out.println("No data in the CsPro DB found!");
+                return true;
+            }
+            InputStream firstGuid = result.getBinaryStream(1);
             if (allRecords) {
-                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " order by guid");
+                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? order by revision, guid limit "+COMMIT_SIZE);
+                selectQuestionnaire.setBinaryStream(1, firstGuid);
                 System.out.println("Starting data transfer from CsPro to MySql... [all records]");
             } else {
-                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where modified_time >= ?  AND modified_time < ?  order by guid");
-                selectQuestionnaire.setTimestamp(1, dTimestamp);
-                selectQuestionnaire.setTimestamp(2, now);
-                System.out.println("Starting data transfer from CsPro to MySql... [" + SDF.format(dTimestamp) + " -> " + SDF.format(now) + "]");
+                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by revision, guid limit "+COMMIT_SIZE);
+                selectQuestionnaire.setBinaryStream(1, firstGuid);
+                selectQuestionnaire.setInt(2, lastRevision);
+                selectQuestionnaire.setInt(3, maxRevision);
+                System.out.println("Starting data transfer from CsPro to MySql... [" + lastRevision + " -> " + maxRevision + "]");
             }
             int totalCompleted = 0, total = 0;
             List<Questionnaire> quests = new LinkedList<>();
             result = selectQuestionnaire.executeQuery();
             while (result.next()) {
                 String questionnaire = result.getString(1);
-                InputStream binaryStream = result.getBinaryStream(2);
+                InputStream guid = result.getBinaryStream(2);
                 //Get the microdata parsing CSPro plain text files according to its dictionary
                 Questionnaire microdata = QuestionnaireReader.parse(dictionary, questionnaire);
-                microdata.setGuid(binaryStream);
+                microdata.setGuid(guid);
                 microdata.setSchema(prop.getProperty("db.dest.schema"));
                 quests.add(microdata);
                 total++;
                 if (quests.size() == COMMIT_SIZE) {
-                    int completed = commitList(dictionary, quests, stmtDst, errorStmt);
+                    int completed = commitList(dictionary, quests, idDictionary, stmtDst, errorStmt);
                     totalCompleted += completed;
                     if (completed==quests.size()) {
                         System.out.print("+");
@@ -137,10 +160,12 @@ public class LoaderEngine {
                         errors = true;
                     }
                     quests.clear();
+                    selectQuestionnaire.setBinaryStream(1, guid);
+                    result = selectQuestionnaire.executeQuery();
                 }
             }
             if (!quests.isEmpty()) {
-                int completed = commitList(dictionary, quests, stmtDst, errorStmt);
+                int completed = commitList(dictionary, quests, idDictionary, stmtDst, errorStmt);
                 totalCompleted += completed;
                 if (completed==quests.size()) {
                     System.out.print("+");
@@ -152,8 +177,8 @@ public class LoaderEngine {
             }
             System.out.println();
 
-            lastUpdateStmt.setTimestamp(1, now);
-            lastUpdateStmt.executeUpdate();
+            lastRevisionUpdateStmt.setInt(1, maxRevision);
+            lastRevisionUpdateStmt.executeUpdate();
             connDst.commit();
 
             System.out.println("Loaded "+totalCompleted+" of "+total+" questionnaires");
@@ -185,7 +210,7 @@ public class LoaderEngine {
         return !globalError;
     }
 
-    private static int commitList(Dictionary dictionary, List<Questionnaire> quests,
+    private static int commitList(Dictionary dictionary, List<Questionnaire> quests, int idDictionary,
             Statement stmtDst, PreparedStatement errorStmt) throws SQLException {
         Connection connDst = stmtDst.getConnection();
         int done = quests.size();
@@ -207,11 +232,12 @@ public class LoaderEngine {
                     if (msg.length() > 2048) {
                         msg = msg.substring(0, 2048);
                     }
-                    errorStmt.setString(1, msg);
-                    errorStmt.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
-                    errorStmt.setBinaryStream(3, q.getGuid());
-                    errorStmt.setString(4, q.getPlainText());
-                    errorStmt.setString(5, script.toString());
+                    errorStmt.setInt(1, idDictionary);
+                    errorStmt.setString(2, msg);
+                    errorStmt.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                    errorStmt.setBinaryStream(4, q.getGuid());
+                    errorStmt.setString(5, q.getPlainText());
+                    errorStmt.setString(6, script.toString());
                     errorStmt.executeUpdate();
                     connDst.commit();
                     done--;

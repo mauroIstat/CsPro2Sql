@@ -36,7 +36,7 @@ public class SchemaEngine {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
                     prop.getProperty("db.dest.table.prefix"));
-            execute(dictionary, prop.getProperty("db.dest.schema"), System.out);
+            execute(dictionary, false, prop.getProperty("db.dest.schema"), System.out);
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Impossible to create the database schema", ex);
             System.exit(1);
@@ -44,8 +44,8 @@ public class SchemaEngine {
         
     }
     
-    static boolean execute(Dictionary dictionary, String schema, PrintStream out) {
-        SchemaWriter.write(schema, dictionary, out);
+    static boolean execute(Dictionary dictionary, boolean foreignKeys, String schema, PrintStream out) {
+        SchemaWriter.write(schema, foreignKeys, dictionary, out);
         return true;
     }
 
