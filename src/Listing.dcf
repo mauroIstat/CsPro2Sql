@@ -1,0 +1,176 @@
+﻿[Dictionary]
+Version=CSPro 6.3
+Label=Listing
+Name=LISTING_DICT
+RecordTypeStart=1
+RecordTypeLen=1
+Positions=Relative
+ZeroFill=No
+DecimalChar=Yes
+
+[Languages]
+ENG=English
+AMH=Amharic
+
+[Level]
+Label=Listing questionnaire
+Name=LISTING_QUEST
+
+[IdItems]
+
+[Item]
+Label=100 Id no. of enumerator|100 የቆጣሪ መለያ
+Name=L_ID100
+Start=2
+Len=10
+
+[ValueSet]
+Label=100 Id no. of enumerator|100 የቆጣሪ መለያ
+Name=L_ID100_VS1
+Value=1:99999999;Valid
+
+[Item]
+Label=101 Region|101 ክ�?�?/ከ/አስተዳደር
+Name=L_ID101
+Start=12
+Len=2
+
+[ValueSet]
+Label=101 Region|101 ክ�?�?/ከ/አስተዳደር
+Name=L_ID101_VS1
+Value=1;Tigray|ት�?ራይ
+Value=2;Afar|አ�?�ር
+Value=3;Amhara|አማራ
+Value=4;Oromia|ኦሮሚያ
+Value=5;Somalie|ሶማሌ
+Value=6;Benshangul|ቤኒሻንጉ�?
+Value=7;SNNP|ደቡብ ብሄር ብሄረሰቦችና ህ�?ቦች
+Value=12;Gambella|ጋ�?ቤላ
+Value=13;Harari|ሀረሪ
+Value=14;Addis Ababa
+Value=15;Diredawa
+
+[Item]
+Label=102 Zone|102 ዞን
+Name=L_ID102
+Start=14
+Len=2
+
+[Item]
+Label=103 Woreda|103 ወረዳ
+Name=L_ID103
+Start=16
+Len=2
+
+[Item]
+Label=104 Town/City|104 ከተማ
+Name=L_ID104
+Start=18
+Len=1
+ZeroFill=Yes
+
+[Item]
+Label=105 Sub city|105 ክ/ከተማ
+Name=L_ID105
+Start=19
+Len=2
+
+[Item]
+Label=106 Principal supervision area|106 ከ/መ ቦታ
+Name=L_ID106
+Start=21
+Len=2
+
+[Item]
+Label=107 Supervision area|107 የመ/ቆ ቦታ
+Name=L_ID107
+Start=23
+Len=2
+
+[Item]
+Label=108 Kebele|108 ቀበሌ
+Name=L_ID108
+Start=25
+Len=3
+
+[Item]
+Label=109 Enumeration area|109 የቆጠራ ቦታ
+Name=L_ID109
+Start=28
+Len=2
+
+[Item]
+Label=10 Housing unit serial no.|10 የቤት መለያ ተራ �?ጥር
+Name=L10
+Start=30
+Len=3
+
+[ValueSet]
+Label=10 Housing unit serial no.|10 የቤት መለያ ተራ �?ጥር
+Name=L10_VS1
+Value=1:999;Valid
+
+[Item]
+Label=13 Serial no. of residence|13 የቤተሰብ መኖሪያ ተራ �?ጥር
+Name=L13
+Start=33
+Len=3
+
+[ValueSet]
+Label=13 Serial no. of residence|13 የቤተሰብ መኖሪያ ተራ �?ጥር
+Name=L13_VS1
+Value=0:999;Valid
+
+[Record]
+Label=Listing record
+Name=LISTING_REC
+RecordTypeValue='1'
+RecordLen=97
+
+[Item]
+Label=11 House number|11 የቤት �?ጥር
+Name=L11
+Start=36
+Len=20
+DataType=Alpha
+
+[ValueSet]
+Label=11 House number|11 የቤት �?ጥር
+Name=L11_VS1
+Value='1                   ';Valid
+
+[Item]
+Label=12 Purpose of housing unit|12  የቤቱ አገ�?�?ሎት
+Name=L12
+Start=56
+Len=1
+
+[ValueSet]
+Label=12 Purpose of housing unit
+Name=L12_VS1
+Value=1;Residence only|ለመኖሪያ ብቻ
+Value=2;Residence and Enterprise|ለመኖሪያና ለድርጅት
+Value=3;Hotel/Hostel|ሆቴ�? ወይ�? ሆስቴ�?
+Value=4;Other Collective Quarter|ለሌላ ጋርዮሽ
+Value=5;Other Enterprise|ለሌላ ድርጅት
+Value=6;Unoccupied/Vacant|ያ�?ተያዘ ወይን�? ባዶ
+Value=7;Under Construction|በመሰራት ላይ ያለ
+
+[Item]
+Label=14 Name of head of the household|14 የቤተሰብ ሀላ�?� ሙሉ ስ�?
+Name=L14
+Start=57
+Len=40
+DataType=Alpha
+
+[Item]
+Label=15 Use irrigation|15 ቤተሰቡ መስኖ ይጠቀማ�?
+Name=L15
+Start=97
+Len=1
+
+[ValueSet]
+Label=15 Use irrigation|15 ቤተሰቡ መስኖ ይጠቀማ�?
+Name=L15_VS1
+Value=1;Yes|አዎን
+Value=2;No|የለ�?

@@ -1,4 +1,3 @@
-
 package cspro2sql.bean;
 
 import java.util.HashMap;
@@ -8,8 +7,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class represents a Dictionary defined by the tag [Dictionary] in the CSPro Dictionary
- * 
+ * This class represents a Dictionary defined by the tag [Dictionary] in the
+ * CSPro Dictionary
+ *
  * @author Istat Cooperation Unit
  */
 public final class Dictionary {
@@ -74,8 +74,8 @@ public final class Dictionary {
     public static final String RELATION_SECONDARYLINK = "SecondaryLink";
 
     private final List<Record> records = new LinkedList<>();
-    private final Map<String,Record> recordsByName = new LinkedHashMap<>();
-    private final Map<String,ValueSet> valueSets = new HashMap<>();
+    private final Map<String, Record> recordsByName = new LinkedHashMap<>();
+    private final Map<String, ValueSet> valueSets = new HashMap<>();
 
     private Record lastRecord;
     private List<Item> lastItems;
@@ -90,17 +90,17 @@ public final class Dictionary {
         }
         this.lastRecord = record;
         this.records.add(this.lastRecord);
-        this.recordsByName.put(record.getRecordTypeValue(),record);
+        this.recordsByName.put(record.getRecordTypeValue(), record);
     }
 
     public void addItem(Item item) {
-        if (item.getOccurrences()>1) {
+        if (item.getOccurrences() > 1) {
             List<Item> its = new LinkedList<>();
-            for (int i=0; i<item.getOccurrences(); i++) {
+            for (int i = 0; i < item.getOccurrences(); i++) {
                 Item it = item.clone();
-                it.setName(it.getName()+"_"+i);
+                it.setName(it.getName() + "_" + i);
                 it.setValueSetName(item.getName());
-                it.setStart(it.getStart()+i*it.getLength());
+                it.setStart(it.getStart() + i * it.getLength());
                 its.add(it);
             }
             if (item.isSubItem()) {
@@ -122,27 +122,31 @@ public final class Dictionary {
     }
 
     public void addValueSet(ValueSet valueSet) {
-        if (valueSet.getLink()!=null && !valueSet.getLink().isEmpty() &&
-                valueSets.containsKey(valueSet.getLink())) {
-            valueSet = valueSets.get(valueSet.getLink()).clone();
-        } else {
-            if (valueSet.isEmpty()) return;
-            if (valueSet.getLink()!=null && !valueSet.getLink().isEmpty()) {
-                this.valueSets.put(valueSet.getLink(),valueSet);
+        if (valueSet != null) {
+            if (valueSet.getLink() != null && !valueSet.getLink().isEmpty()
+                    && valueSets.containsKey(valueSet.getLink())) {
+                valueSet = valueSets.get(valueSet.getLink()).clone();
+            } else {
+                if (valueSet.isEmpty()) {
+                    return;
+                }
+                if (valueSet.getLink() != null && !valueSet.getLink().isEmpty()) {
+                    this.valueSets.put(valueSet.getLink(), valueSet);
+                }
             }
+            addValueSetToLastItems(valueSet);
         }
-        addValueSetToLastItems(valueSet);
     }
-    
+
     private void addLastItem(Item item) {
         this.lastItems = new LinkedList<>();
         this.lastItems.add(item);
     }
-    
+
     private void addLastItems(List<Item> items) {
         this.lastItems = items;
     }
-    
+
     private void addValueSetToLastItems(ValueSet valueSet) {
         for (Item item : this.lastItems) {
             if (ITEM_ALPHA.equals(item.getDataType())) {
@@ -153,22 +157,22 @@ public final class Dictionary {
             }
         }
     }
-    
+
     private void addLastItemNotSubItem(Item item) {
         this.lastItemsNotSubItem = new LinkedList<>();
         this.lastItemsNotSubItem.add(item);
     }
-    
+
     private void addLastItemsNotSubItem(List<Item> items) {
         this.lastItemsNotSubItem = items;
     }
-    
+
     private void addSubItem(Item subItem) {
         for (Item item : this.lastItemsNotSubItem) {
             item.addSubItem(subItem);
         }
     }
-    
+
     private void addSubItems(List<Item> subItems) {
         for (Item item : this.lastItemsNotSubItem) {
             for (Item subItem : subItems) {
@@ -176,7 +180,7 @@ public final class Dictionary {
             }
         }
     }
-    
+
     public Record getMainRecord() {
         return this.records.get(0);
     }
@@ -184,11 +188,11 @@ public final class Dictionary {
     public List<Record> getRecords() {
         return records;
     }
-    
+
     public Record getRecord(char name) {
-        return recordsByName.get(""+name);
+        return recordsByName.get("" + name);
     }
-    
+
     public Record getRecord(String name) {
         return recordsByName.get(name);
     }

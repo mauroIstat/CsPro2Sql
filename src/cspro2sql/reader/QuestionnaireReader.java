@@ -1,6 +1,6 @@
-
 package cspro2sql.reader;
 
+import cspro2sql.bean.Answer;
 import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
 import cspro2sql.bean.Questionnaire;
@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * This class parse a plain text CSPro questionnaire
- * 
+ *
  * @author Istat Cooperation Unit
  */
 public class QuestionnaireReader {
@@ -20,9 +20,9 @@ public class QuestionnaireReader {
         Questionnaire result = new Questionnaire(questionnaire);
         String[] rows = questionnaire.split(Dictionary.DICT_NEWLINE_REGEXP);
         Record record = dictionary.getMainRecord();
-        List<List<String>> valuesList = new LinkedList<>();
+        List<List<Answer>> valuesList = new LinkedList<>();
         result.setRecordValues(record, valuesList);
-        List<String> values = new LinkedList<>();
+        List<Answer> values = new LinkedList<>();
         valuesList.add(values);
         for (Item item : record.getItems()) {
             parseItem(item, rows[0], values);
@@ -43,13 +43,13 @@ public class QuestionnaireReader {
         return result;
     }
 
-    private static void parseItem(Item item, String row, List<String> values) {
-        if (row.length()<item.getStart() - 1 + item.getLength()) {
-            values.add(null);
+    private static void parseItem(Item item, String row, List<Answer> values) {
+        if (row.length() < item.getStart() - 1 + item.getLength()) {
+            values.add(new Answer(item, null));
         } else {
             String v = row.substring(item.getStart() - 1, item.getStart() - 1 + item.getLength());
             if (v.trim().isEmpty()) {
-                values.add(null);
+                values.add(new Answer(item, null));
             } else {
                 switch (item.getDataType()) {
                     case "Number":
@@ -62,13 +62,13 @@ public class QuestionnaireReader {
                             if (tail.isEmpty()) {
                                 tail = "0";
                             }
-                            values.add(head + "." + tail);
+                            values.add(new Answer(item, head + "." + tail));
                         } else {
-                            values.add(v);
+                            values.add(new Answer(item, v));
                         }
                         break;
                     case "Alpha":
-                        values.add("\"" + v + "\"");
+                        values.add(new Answer(item, v));
                         break;
                 }
             }
