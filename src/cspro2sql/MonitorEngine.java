@@ -1,30 +1,57 @@
 package cspro2sql;
 
+import cspro2sql.bean.Dictionary;
+import cspro2sql.reader.DictionaryReader;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class MonitorEngine {
 
-    static boolean execute(String propertiesFile, String schema, PrintStream out) {
+    static final String[] TEMPLATES = new String[]{
+        "r_questionnaire_info",
+        "r_individual_info",
+        "r_religion",
+        "r_sex_by_age"
+    };
+
+    public static void main(String[] args) throws Exception {
         Properties prop = new Properties();
-        boolean isLocalFile = new File(propertiesFile).exists();
-        //Load property file
-        try (InputStream in
-                = (isLocalFile
-                        ? new FileInputStream(propertiesFile)
-                        : LoaderEngine.class.getResourceAsStream(propertiesFile))) {
+        try (InputStream in = MonitorEngine.class.getResourceAsStream("/database.properties")) {
             prop.load(in);
         } catch (IOException ex) {
+            return;
         }
-        String individualTable = prop.getProperty("table.individual");
-        String individualSex = prop.getProperty("column.individual.sex");
-        String individualAge = prop.getProperty("column.individual.age");
-        String sexMale = prop.getProperty("value.individual.sex.male");
-        String sexFemale = prop.getProperty("value.individual.sex.female");
+        try {
+            Dictionary dictionary = DictionaryReader.read(
+                    prop.getProperty("dictionary.filename"),
+                    prop.getProperty("db.dest.table.prefix"));
+            execute(dictionary, prop, System.out);
+        } catch (Exception ex) {
+            System.exit(1);
+        }
+    }
+
+    static boolean execute(Dictionary dictionary, Properties prop, PrintStream out) {
+        String schema = prop.getProperty("db.dest.schema");
+
+        Map<String, String> params = new HashMap<>();
+        params.put("@SCHEMA", schema);
+        params.put("@QUESTIONNAIRE_TABLE", prop.getProperty("table.questionnaire"));
+        params.put("@QUESTIONNAIRE_COLUMN", dictionary.getMainRecord().getName());
+        params.put("@INDIVIDUAL_TABLE", prop.getProperty("table.individual"));
+        params.put("@INDIVIDUAL_COLUMN_SEX", prop.getProperty("column.individual.sex"));
+        params.put("@INDIVIDUAL_COLUMN_AGE", prop.getProperty("column.individual.age"));
+        params.put("@INDIVIDUAL_COLUMN_RELIGION", prop.getProperty("column.individual.religion"));
+        params.put("@INDIVIDUAL_VALUE_SEX_MALE", prop.getProperty("value.individual.sex.male"));
+        params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", prop.getProperty("value.individual.sex.female"));
         
         out.println("CREATE TABLE " + schema + ".`c_user` (\n"
                 + "  `ID` int(11) NOT NULL AUTO_INCREMENT,\n"
@@ -37,7 +64,7 @@ public class MonitorEngine {
                 + "  UNIQUE KEY `EMAIL_UNIQUE` (`EMAIL`(255))\n"
                 + ") ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
         out.println();
-        
+
         out.println("CREATE TABLE " + schema + ".`c_user_roles` (\n"
                 + "  `EMAIL` varchar(256) NOT NULL,\n"
                 + "  `ROLE` varchar(45) DEFAULT NULL,\n"
@@ -45,186 +72,34 @@ public class MonitorEngine {
                 + ") ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
         out.println();
 
-        out.println("CREATE VIEW " + schema + ".`r_individual_count` AS\n"
-                + "    SELECT COUNT(0) AS `individual`\n"
-                + "    FROM " + schema + "." + individualTable + ";");
-        out.println();
+        try {
+            for (String template : TEMPLATES) {
+                printTemplate(template, params, out);
+                out.println("SELECT @ID := 0;");
+                out.println("CREATE TABLE m" + template + " AS SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + template + ";");
+                out.println();
+            }
+        } catch (IOException ex) {
+            return false;
+        }
 
-        out.println("CREATE VIEW " + schema + ".`r_questionnaire_total` AS\n"
-                + "    SELECT COUNT(0) AS `total`\n"
-                + "    FROM " + schema + "." + prop.getProperty("table.listing_questionnaires") + ";");
-        out.println();
+        return true;
+    }
 
-        out.println("CREATE VIEW " + schema + ".`r_questionnaire_returned` AS\n"
-                + "    SELECT COUNT(0) AS `returned`\n"
-                + "    FROM " + schema + "." + prop.getProperty("table.returned_questionnaires") + ";");
-        out.println();
-
-        out.println("CREATE VIEW " + schema + ".`r_sex_by_age` AS\n"
-                + "    SELECT \n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 0)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 4))) AS `MALE_0_4`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 0)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 4))) AS `FEMALE_0_4`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 5)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 10))) AS `MALE_5_10`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 5)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 10))) AS `FEMALE_5_10`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 11)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 16))) AS `MALE_11_16`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 11)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 16))) AS `FEMALE_11_16`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 17)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 25))) AS `MALE_17_25`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 17)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 25))) AS `FEMALE_17_25`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 26)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 34))) AS `MALE_26_34`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 26)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 34))) AS `FEMALE_26_34`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 35)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 45))) AS `MALE_35_45`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 35)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 45))) AS `FEMALE_35_45`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 46)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 55))) AS `MALE_46_55`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 46)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 55))) AS `FEMALE_46_55`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 56)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 65))) AS `MALE_56_65`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 56)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 65))) AS `FEMALE_56_65`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 66)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 75))) AS `MALE_66_75`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 66)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 75))) AS `FEMALE_66_75`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexMale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 76)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 99))) AS `MALE_76_99`,\n"
-                + "        (SELECT \n"
-                + "                COUNT(0)\n"
-                + "            FROM\n"
-                + "                " + schema + "." + individualTable + "\n"
-                + "            WHERE\n"
-                + "                ((" + schema + "." + individualTable + "." + individualSex + " = " + sexFemale + ")\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " >= 76)\n"
-                + "                    AND (" + schema + "." + individualTable + "." + individualAge + " <= 99))) AS `FEMALE_76_99`;");
-        out.println();
-
-        return false;
+    private static void printTemplate(String template, Map<String, String> params, PrintStream ps) throws IOException {
+        try (InputStream in = MonitorEngine.class.getResourceAsStream("/cspro2sql/sql/" + template + ".sql")) {
+            try (InputStreamReader isr = new InputStreamReader(in, "UTF-8")) {
+                try (BufferedReader br = new BufferedReader(isr)) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        for (Map.Entry<String, String> e : params.entrySet()) {
+                            line = line.replace(e.getKey(), e.getValue());
+                        }
+                        ps.println(line);
+                    }
+                }
+            }
+        }
     }
 
 }

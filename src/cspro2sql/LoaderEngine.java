@@ -40,34 +40,23 @@ public class LoaderEngine {
     private static final String LAST_REVISION_INSERT_STMT = "insert into CSPRO2SQL_DICTIONARY (NAME) values (?)";
 
     public static void main(String[] args) {
-        execute("/database.properties", true, true, false);
-    }
-
-    static boolean execute(String propertiesFile, boolean allRecords, boolean checkConstraints, boolean checkOnly) {
-        Dictionary dictionary;
         Properties prop = new Properties();
-        boolean isLocalFile = new File(propertiesFile).exists();
-        //Load property file
-        try (InputStream in
-                = (isLocalFile
-                        ? new FileInputStream(propertiesFile)
-                        : LoaderEngine.class.getResourceAsStream(propertiesFile))) {
+        try (InputStream in = LoaderEngine.class.getResourceAsStream("/database.properties")) {
             prop.load(in);
         } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, "Cannot read properties file", ex);
-            return false;
+            return;
         }
-
-        //Parse dictionary file
         try {
-            dictionary = DictionaryReader.read(
+            Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
                     prop.getProperty("db.dest.table.prefix"));
+            execute(dictionary, prop, true, true, false);
         } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Impossible to read dictionary file", ex);
-            return false;
+            System.exit(1);
         }
+    }
 
+    static boolean execute(Dictionary dictionary, Properties prop, boolean allRecords, boolean checkConstraints, boolean checkOnly) {
         Connection connSrc = null;
         Connection connDst = null;
         boolean globalError = false;
