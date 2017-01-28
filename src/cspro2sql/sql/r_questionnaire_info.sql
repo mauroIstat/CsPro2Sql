@@ -1,4 +1,4 @@
-CREATE VIEW `r_questionnaire_info` AS
+CREATE VIEW @SCHEMA.`r_questionnaire_info` AS
     SELECT 
         COUNT(0) AS `total`,
         `avg_individual`.`avg_individual` AS `avg_individual`,
@@ -13,7 +13,7 @@ CREATE VIEW `r_questionnaire_info` AS
             COUNT(0) AS `num`
         FROM
             @SCHEMA.@INDIVIDUAL_TABLE
-        GROUP BY @SCHEMA.@INDIVIDUAL_TABLE.@QUESTIONNAIRE_COLUMN) `a`) `avg_individual`)
+        GROUP BY @SCHEMA.@INDIVIDUAL_TABLE.@QUESTIONNAIRE_COLUMN_BASE) `a`) `avg_individual`)
         JOIN (SELECT 
             AVG(`a`.`num`) AS `avg_individual_male`
         FROM
@@ -23,7 +23,7 @@ CREATE VIEW `r_questionnaire_info` AS
             @SCHEMA.@INDIVIDUAL_TABLE
         WHERE
             (@SCHEMA.@INDIVIDUAL_TABLE.@INDIVIDUAL_COLUMN_SEX = @INDIVIDUAL_VALUE_SEX_MALE)
-        GROUP BY @SCHEMA.@INDIVIDUAL_TABLE.@QUESTIONNAIRE_COLUMN) `a`) `avg_individual_male`)
+        GROUP BY @SCHEMA.@INDIVIDUAL_TABLE.@QUESTIONNAIRE_COLUMN_BASE) `a`) `avg_individual_male`)
         JOIN (SELECT 
             AVG(`a`.`num`) AS `avg_individual_female`
         FROM
@@ -33,5 +33,5 @@ CREATE VIEW `r_questionnaire_info` AS
             @SCHEMA.@INDIVIDUAL_TABLE
         WHERE
             (@SCHEMA.@INDIVIDUAL_TABLE.@INDIVIDUAL_COLUMN_SEX = @INDIVIDUAL_VALUE_SEX_FEMALE)
-        GROUP BY @SCHEMA.@INDIVIDUAL_TABLE.@QUESTIONNAIRE_COLUMN) `a`) `avg_individual_female`);
+        GROUP BY @SCHEMA.@INDIVIDUAL_TABLE.@QUESTIONNAIRE_COLUMN_BASE) `a`) `avg_individual_female`);
 

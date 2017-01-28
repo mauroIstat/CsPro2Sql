@@ -20,6 +20,8 @@ public class SchemaWriter {
     public static void write(String schema, boolean foreignKeys, Dictionary dictionary, PrintStream ps) {
         ps.println("CREATE SCHEMA IF NOT EXISTS " + schema + ";");
         ps.println();
+        ps.println("USE " + schema + ";");
+        ps.println();
 
         printSystemTables(schema, ps);
 
@@ -96,7 +98,7 @@ public class SchemaWriter {
                     if (!first) {
                         ps.println(",");
                     }
-                    ps.print("    (" + e.getKey() + ",\"" + e.getValue() + "\")");
+                    ps.print("    (\"" + e.getKey() + "\",\"" + e.getValue() + "\")");
                     keys.add(e.getKey());
                     first = false;
                 }
@@ -127,7 +129,7 @@ public class SchemaWriter {
         ps.println("    `SQL_SCRIPT` longtext COLLATE utf8mb4_unicode_ci NOT NULL,");
         ps.println("    PRIMARY KEY (`ID`),");
         ps.println("    KEY `dictionary_idx` (`DICTIONARY`),");
-        ps.println("    CONSTRAINT `dictionary` FOREIGN KEY (`DICTIONARY`) REFERENCES `cspro2sql_dictionary` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION");
+        ps.println("    CONSTRAINT `dictionary` FOREIGN KEY (`DICTIONARY`) REFERENCES " + schema + ".`cspro2sql_dictionary` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION");
         ps.println(") ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
         ps.println();
     }

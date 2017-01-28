@@ -2,16 +2,19 @@ package cspro2sql;
 
 import cspro2sql.bean.Dictionary;
 import cspro2sql.reader.DictionaryReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+/**
+ *
+ * @author Istat Cooperation Unit
+ */
 public class StatsEngine {
 
     public static void main(String[] args) throws Exception {
@@ -44,12 +47,15 @@ public class StatsEngine {
                     prop.getProperty("db.dest.password"));
             connDst.setAutoCommit(false);
 
-            Statement stmtDst = connDst.createStatement();
+            Statement readDst = connDst.createStatement();
+            Statement writeDst = connDst.createStatement();
 
-            for (String template : MonitorEngine.TEMPLATES) {
-                stmtDst.executeUpdate("TRUNCATE " + schema + ".m" + template);
-                stmtDst.executeQuery("SELECT @ID := 0");
-                stmtDst.executeUpdate("INSERT INTO " + schema + ".m" + template + " SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
+            ResultSet rs = readDst.executeQuery("SELECT * FROM " + schema + ".cspro2sql_stats");
+            while (rs.next()) {
+                String template = rs.getString(1);
+                writeDst.executeUpdate("TRUNCATE " + schema + ".m" + template);
+                writeDst.executeQuery("SELECT @ID := 0");
+                writeDst.executeUpdate("INSERT INTO " + schema + ".m" + template + " SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
                 connDst.commit();
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | SQLException ex) {

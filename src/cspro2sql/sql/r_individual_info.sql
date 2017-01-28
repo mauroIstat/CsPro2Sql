@@ -1,4 +1,4 @@
-CREATE VIEW `r_individual_info` AS
+CREATE VIEW @SCHEMA.`r_individual_info` AS
     SELECT 
         `total`.`total` AS `total`,
         `total`.`age_avg` AS `age_avg`,

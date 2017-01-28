@@ -1,4 +1,3 @@
-
 package cspro2sql.bean;
 
 import java.util.LinkedList;
@@ -6,29 +5,37 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a Record defined by the tag [Record] in the CSPro Dictionary
- * 
+ * This class represents a Record defined by the tag [Record] in the CSPro
+ * Dictionary
+ *
  * @author Istat Cooperation Unit
  */
 public final class Record {
-    
+
     private final String tablePrefix;
+    private final String valueSetPrefix;
     private String name;
     private String recordTypeValue;
     private boolean required;
     private int max;
     private int length;
-    
+
     private Record mainRecord;
     private boolean isMainRecord = false;
     private final List<Item> items = new LinkedList<>();
 
     public Record(String tablePrefix) {
-        if (tablePrefix==null || tablePrefix.isEmpty()) {
+        if (tablePrefix == null || tablePrefix.isEmpty()) {
             this.tablePrefix = "";
+            this.valueSetPrefix = "VS_";
         } else {
-            this.tablePrefix = tablePrefix + "_";
+            this.tablePrefix = tablePrefix.toUpperCase() + "_";
+            this.valueSetPrefix = "VS" + this.tablePrefix;
         }
+    }
+
+    public String getValueSetPrefix() {
+        return valueSetPrefix;
     }
 
     public String getName() {
@@ -74,15 +81,19 @@ public final class Record {
     public void setLength(int length) {
         this.length = length;
     }
-    
+
     public void addItem(Item it) {
         items.add(it);
+        it.setRecord(this);
     }
-    
+
     public void addItems(List<Item> its) {
         items.addAll(its);
+        for (Item it : items) {
+            it.setRecord(this);
+        }
     }
-    
+
     public List<Item> getItems() {
         return items;
     }
@@ -91,10 +102,11 @@ public final class Record {
         int i = items.indexOf(item);
         for (Item it : split) {
             items.add(i++, it);
+            it.setRecord(this);
         }
         items.remove(i);
     }
-    
+
     public Record getMainRecord() {
         return mainRecord;
     }

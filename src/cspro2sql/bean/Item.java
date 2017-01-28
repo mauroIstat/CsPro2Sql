@@ -1,4 +1,3 @@
-
 package cspro2sql.bean;
 
 import java.util.ArrayList;
@@ -6,16 +5,18 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents an Item defined by the tag [Item] in the CSPro Dictionary
- * 
+ * This class represents an Item defined by the tag [Item] in the CSPro
+ * Dictionary
+ *
  * @author Istat Cooperation Unit
  */
 public final class Item {
-    
+
+    private Record record;
     private String name;
     private String valueSetName;
     private String dataType = "Number";
-    private int start; 
+    private int start;
     private int length;
     private int occurrences;
     private int decimal;
@@ -25,14 +26,19 @@ public final class Item {
     private final List<Item> subItems = new ArrayList<>();
     private final List<ValueSet> valueSets = new ArrayList<>();
 
+    public void setRecord(Record record) {
+        this.record = record;
+    }
+
     public void setValueSetName(String valueSetName) {
         this.valueSetName = valueSetName;
     }
-    
+
     public String getValueSetName() {
-        if (valueSetName!=null)
-            return "VS_"+valueSetName;
-        return "VS_"+name;
+        if (valueSetName != null) {
+            return record.getValueSetPrefix() + valueSetName;
+        }
+        return record.getValueSetPrefix() + name;
     }
 
     public String getName() {
@@ -113,8 +119,9 @@ public final class Item {
 
     public void addSubItem(Item subItem) {
         this.subItems.add(subItem);
+        subItem.setRecord(record);
     }
-    
+
     public List<ValueSet> getValueSets() {
         return valueSets;
     }
@@ -122,26 +129,26 @@ public final class Item {
     public void addValueSet(ValueSet valueSet) {
         this.valueSets.add(valueSet);
     }
-    
+
     public boolean hasValueSets() {
         return !this.valueSets.isEmpty();
     }
-    
+
     public int getValueSetsValueLength() {
         int len = 0;
         for (ValueSet vs : this.valueSets) {
-            len = Math.max(len,vs.getValueLength());
+            len = Math.max(len, vs.getValueLength());
         }
         return len;
     }
-    
+
     public List<Item> splitIntoColumns(ValueSet values) {
         List<Item> items = new ArrayList<>(getLength());
-        for (int i=0; i<getLength(); i++) {
+        for (int i = 0; i < getLength(); i++) {
             Item c = clone();
             c.addValueSet(values);
-            c.setName(c.getName()+"_"+i);
-            c.setStart(c.getStart()+i);
+            c.setName(c.getName() + "_" + i);
+            c.setStart(c.getStart() + i);
             c.valueSetName = this.name;
             c.setLength(1);
             items.add(c);
@@ -170,7 +177,7 @@ public final class Item {
         final Item other = (Item) obj;
         return Objects.equals(this.name, other.name);
     }
-    
+
     @Override
     public Item clone() {
         Item clone = new Item();
@@ -185,5 +192,5 @@ public final class Item {
         clone.zeroFill = this.zeroFill;
         return clone;
     }
-    
+
 }
