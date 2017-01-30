@@ -171,10 +171,10 @@ public class Main {
                     + "CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e stats   -p PROPERTIES_FILE\n"
                     + "\n", options);
-            if (errMessage != null) {
-                System.exit(1);
-            } else {
+            if (errMessage == null) {
                 System.exit(0);
+            } else {
+                System.exit(1);
             }
         }
     }

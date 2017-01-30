@@ -6,6 +6,7 @@ import cspro2sql.writer.MonitorWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -37,6 +38,9 @@ public class MonitorEngine {
         String schema = prop.getProperty("db.dest.schema");
         String[] ea = prop.getProperty("column.questionnaire.ea").split(",");
         String[] eaName = prop.getProperty("column.questionnaire.ea.name").split(",");
+        String[] eaDescription = prop.getProperty("column.questionnaire.ea.description").split(",");
+        eaName = Arrays.copyOf(eaName, ea.length);
+        eaDescription = Arrays.copyOf(eaDescription, ea.length);
         String[] ageRangeS = prop.getProperty("range.individual.age").split(",");
         int[] ageRange = new int[ageRangeS.length];
         for (int i = 0; i < ageRangeS.length; i++) {
@@ -58,7 +62,7 @@ public class MonitorEngine {
         params.put("@VALUESET_SEX", prop.getProperty("valueset.sex"));
         params.put("@VALUESET_RELIGION", prop.getProperty("valueset.religion"));
 
-        return MonitorWriter.write(schema, ea, eaName, ageRange, params, out);
+        return MonitorWriter.write(schema, ea, eaName, eaDescription, ageRange, params, out);
     }
 
 }

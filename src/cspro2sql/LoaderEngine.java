@@ -5,8 +5,6 @@ import cspro2sql.bean.Questionnaire;
 import cspro2sql.reader.DictionaryReader;
 import cspro2sql.reader.QuestionnaireReader;
 import cspro2sql.writer.InsertWriter;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -166,8 +164,10 @@ public class LoaderEngine {
                     quests.add(microdata);
                 }
 
-                if (!checkOnly) {
-                    if (result.isLast()) {
+                if (result.isLast()) {
+                    if (checkOnly) {
+                        System.out.print("x");
+                    } else {
                         int completed = commitList(dictionary, quests, idDictionary, stmtDst, errorStmt);
                         totalCompleted += completed;
                         if (completed == quests.size()) {
@@ -177,11 +177,7 @@ public class LoaderEngine {
                             errors = true;
                         }
                         quests.clear();
-                        selectQuestionnaire.setBinaryStream(1, guid);
-                        result = selectQuestionnaire.executeQuery();
                     }
-                } else if (result.isLast()) {
-                    System.out.print("x");
                     selectQuestionnaire.setBinaryStream(1, guid);
                     result = selectQuestionnaire.executeQuery();
                 }
