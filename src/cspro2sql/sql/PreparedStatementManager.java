@@ -1,6 +1,7 @@
 package cspro2sql.sql;
 
 import cspro2sql.bean.Answer;
+import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import java.sql.Connection;
@@ -33,7 +34,7 @@ public class PreparedStatementManager {
             Item item = a.getItem();
             String v = a.getValue();
             switch (item.getDataType()) {
-                case "Number":
+                case Dictionary.ITEM_DECIMAL:
                     if (v == null) {
                         insertPS.setNull(field++, Types.INTEGER);
                     } else if (v.contains(".")) {
@@ -42,7 +43,7 @@ public class PreparedStatementManager {
                         insertPS.setInt(field++, Integer.parseInt(v.trim()));
                     }
                     break;
-                case "Alpha":
+                case Dictionary.ITEM_ALPHA:
                     if (v == null) {
                         insertPS.setNull(field++, Types.VARCHAR);
                     } else {

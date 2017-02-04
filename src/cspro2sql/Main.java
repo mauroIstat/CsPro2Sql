@@ -36,7 +36,7 @@ public class Main {
             opts.ps.close();
             opts.printHelp("Impossible to read dictionary file (" + ex.getMessage() + ")");
         }
-        
+
         if (opts.schemaEngine) {
             error = !SchemaEngine.execute(dictionary, opts.prop, opts.foreignKeys, opts.ps);
         } else if (opts.loaderEngine) {
@@ -47,7 +47,7 @@ public class Main {
             error = !StatsEngine.execute(dictionary, opts.prop);
         }
         opts.ps.close();
-        
+
         if (error) {
             System.exit(1);
         }
@@ -119,7 +119,7 @@ public class Main {
             System.out.println("Cannot read properties file '" + opts.propertiesFile + "'");
             opts.printHelp();
         }
-        
+
         opts.prop = prop;
         opts.dictFile = prop.getProperty("dictionary.filename");
         if (opts.dictFile == null || opts.dictFile.isEmpty()) {
@@ -152,7 +152,7 @@ public class Main {
         Properties prop;
         private final Options options;
 
-        private CsPro2SqlOptions(Options options) {
+        CsPro2SqlOptions(Options options) {
             this.options = options;
         }
 

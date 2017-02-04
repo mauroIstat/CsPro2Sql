@@ -52,7 +52,7 @@ public class QuestionnaireReader {
                 values.add(new Answer(item, null));
             } else {
                 switch (item.getDataType()) {
-                    case "Number":
+                    case Dictionary.ITEM_DECIMAL:
                         if (item.getDecimal() > 0 && !item.hasDecimalChar()) {
                             String head = v.substring(0, v.length() - item.getDecimal()).trim();
                             if (head.isEmpty()) {
@@ -67,7 +67,7 @@ public class QuestionnaireReader {
                             values.add(new Answer(item, v));
                         }
                         break;
-                    case "Alpha":
+                    case Dictionary.ITEM_ALPHA:
                         values.add(new Answer(item, v));
                         break;
                 }

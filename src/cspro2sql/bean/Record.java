@@ -2,6 +2,7 @@ package cspro2sql.bean;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -29,9 +30,13 @@ public final class Record {
             this.tablePrefix = "";
             this.valueSetPrefix = "VS_";
         } else {
-            this.tablePrefix = tablePrefix.toUpperCase() + "_";
+            this.tablePrefix = tablePrefix.toUpperCase(Locale.getDefault()) + "_";
             this.valueSetPrefix = "VS" + this.tablePrefix;
         }
+    }
+
+    public String getTablePrefix() {
+        return tablePrefix;
     }
 
     public String getValueSetPrefix() {

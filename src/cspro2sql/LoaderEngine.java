@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,7 +31,6 @@ import java.util.logging.Logger;
 public class LoaderEngine {
 
     private static final Logger LOGGER = Logger.getLogger(LoaderEngine.class.getName());
-    private static final SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static final int MAX_COMMIT_SIZE = 100;
     private static final String ERROR_STMT = "insert into CSPRO2SQL_ERRORS (DICTIONARY, ERROR, DATE, CSPRO_GUID, QUESTIONNAIRE, SQL_SCRIPT) values (?,?,?,?,?,?)";
     private static final String LAST_REVISION_UPDATE_STMT = "update CSPRO2SQL_DICTIONARY set REVISION = ? where ID = ?";
@@ -59,6 +59,8 @@ public class LoaderEngine {
         Connection connDst = null;
         boolean globalError = false;
 
+        SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
+
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             String srcSchema = prop.getProperty("db.source.schema");
@@ -78,7 +80,6 @@ public class LoaderEngine {
                     prop.getProperty("db.dest.password"));
             connDst.setAutoCommit(false);
 
-            Statement stmtDst = connDst.createStatement();
             PreparedStatement errorStmt = connDst.prepareStatement(ERROR_STMT);
             PreparedStatement selectLastRevisionStmt = connDst.prepareStatement(LAST_REVISION_SELECT_STMT);
             PreparedStatement dictionaryStmt = connDst.prepareStatement(LAST_REVISION_INSERT_STMT);
@@ -93,14 +94,17 @@ public class LoaderEngine {
             if (result.next()) {
                 idDictionary = result.getInt(1);
                 lastRevision = result.getInt(2);
+                result.close();
             } else {
                 dictionaryStmt.setString(1, srcDataTable);
                 dictionaryStmt.executeUpdate();
                 connDst.commit();
+                result.close();
                 result = selectLastRevisionStmt.executeQuery();
                 result.next();
                 idDictionary = result.getInt(1);
                 lastRevision = result.getInt(2);
+                result.close();
             }
             lastRevisionUpdateStmt.setInt(2, idDictionary);
             // TODO retrieve max revision from source db
@@ -112,82 +116,90 @@ public class LoaderEngine {
             result = getGuidStmt.executeQuery();
             if (!result.next()) {
                 System.out.println("No data in the CsPro DB found!");
+                result.close();
                 return true;
             }
             InputStream firstGuid = result.getBinaryStream(1);
+            result.close();
             firstGuid = null;
-            
+
             if (allRecords) {
-                if (firstGuid == null) {
-                    selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " order by revision, guid limit " + MAX_COMMIT_SIZE);
-                } else {
-                    selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? order by revision, guid limit " + MAX_COMMIT_SIZE);
-                    selectQuestionnaire.setBinaryStream(1, firstGuid);
-                }
+                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " order by guid limit " + MAX_COMMIT_SIZE);
                 result = selectQuestionnaire.executeQuery();
-                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? order by revision, guid limit " + MAX_COMMIT_SIZE);
+                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? order by guid limit " + MAX_COMMIT_SIZE);
                 System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro to MySql... [all records]");
             } else {
                 if (firstGuid == null) {
-                    selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where revision > ? AND revision <= ? order by revision, guid limit " + MAX_COMMIT_SIZE);
+                    selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                     selectQuestionnaire.setInt(1, lastRevision);
                     selectQuestionnaire.setInt(2, maxRevision);
                 } else {
-                    selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by revision, guid limit " + MAX_COMMIT_SIZE);
+                    selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                     selectQuestionnaire.setBinaryStream(1, firstGuid);
                     selectQuestionnaire.setInt(2, lastRevision);
                     selectQuestionnaire.setInt(3, maxRevision);
                 }
                 result = selectQuestionnaire.executeQuery();
-                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by revision, guid limit " + MAX_COMMIT_SIZE);
+                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                 selectQuestionnaire.setInt(2, lastRevision);
                 selectQuestionnaire.setInt(3, maxRevision);
                 System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro to MySql... [" + lastRevision + " -> " + maxRevision + "]");
             }
-            
+
             int totalCompleted = 0, total = 0;
-            List<Questionnaire> quests = new LinkedList<>();
-            while (result.next()) {
-                String questionnaire = result.getString(1);
-                InputStream guid = result.getBinaryStream(2);
-                //Get the microdata parsing CSPro plain text files according to its dictionary
-                Questionnaire microdata = QuestionnaireReader.parse(dictionary, questionnaire);
-                microdata.setGuid(guid);
-                microdata.setSchema(prop.getProperty("db.dest.schema"));
-                total++;
+            try (Statement stmtDst = connDst.createStatement()) {
+                stmtDst.executeQuery("SET unique_checks=0");
+                stmtDst.executeQuery("SET foreign_key_checks=0");
 
-                if ((checkConstraints || checkOnly) && !microdata.checkValueSets()) {
-                    errors = true;
-                    String msg = "Validation failed\n" + microdata.getCheckErrors();
-                    writeError(idDictionary, msg, microdata, "", errorStmt);
-                } else if (!checkOnly) {
-                    quests.add(microdata);
-                }
+                List<Questionnaire> quests = new LinkedList<>();
+                while (result.next()) {
+                    boolean chunkError = false;
+                    String questionnaire = result.getString(1);
+                    InputStream guid = result.getBinaryStream(2);
+                    //Get the microdata parsing CSPro plain text files according to its dictionary
+                    Questionnaire microdata = QuestionnaireReader.parse(dictionary, questionnaire);
+                    microdata.setGuid(guid);
+                    microdata.setSchema(prop.getProperty("db.dest.schema"));
+                    total++;
 
-                if (result.isLast()) {
-                    if (checkOnly) {
-                        System.out.print("x");
-                    } else {
-                        int completed = commitList(dictionary, quests, idDictionary, stmtDst, errorStmt);
-                        totalCompleted += completed;
-                        if (completed == quests.size()) {
-                            System.out.print("+");
-                        } else {
-                            System.out.print("-");
-                            errors = true;
-                        }
-                        quests.clear();
+                    if ((checkConstraints || checkOnly) && !microdata.checkValueSets()) {
+                        errors = true;
+                        chunkError = true;
+                        String msg = "Validation failed\n" + microdata.getCheckErrors();
+                        writeError(idDictionary, msg, microdata, "", errorStmt);
+                    } else if (!checkOnly) {
+                        quests.add(microdata);
                     }
-                    selectQuestionnaire.setBinaryStream(1, guid);
-                    result = selectQuestionnaire.executeQuery();
-                }
-            }
-            System.out.println();
 
-            if (!checkOnly) {
-                lastRevisionUpdateStmt.setInt(1, maxRevision);
-                lastRevisionUpdateStmt.executeUpdate();
-                connDst.commit();
+                    if (result.isLast()) {
+                        if (checkOnly) {
+                            System.out.print((chunkError) ? '-' : 'x');
+                        } else {
+                            int completed = commitList(dictionary, quests, idDictionary, stmtDst, errorStmt);
+                            totalCompleted += completed;
+                            if (!chunkError && completed == quests.size()) {
+                                System.out.print('+');
+                            } else {
+                                System.out.print('-');
+                                errors = true;
+                            }
+                            quests.clear();
+                        }
+                        selectQuestionnaire.setBinaryStream(1, guid);
+                        result.close();
+                        result = selectQuestionnaire.executeQuery();
+                    }
+                }
+                System.out.println();
+
+                if (!checkOnly) {
+                    lastRevisionUpdateStmt.setInt(1, maxRevision);
+                    lastRevisionUpdateStmt.executeUpdate();
+                    connDst.commit();
+                }
+
+                stmtDst.executeQuery("SET foreign_key_checks=1");
+                stmtDst.executeQuery("SET unique_checks=1");
             }
 
             System.out.println("Loaded " + totalCompleted + " of " + total + " questionnaires");
@@ -254,9 +266,6 @@ public class LoaderEngine {
 
     private static void writeError(int idDictionary, String msg, Questionnaire q, String script, PreparedStatement errorStmt) throws SQLException {
         Connection connDst = errorStmt.getConnection();
-        if (msg.length() > 2048) {
-            msg = msg.substring(0, 2048);
-        }
         errorStmt.setInt(1, idDictionary);
         errorStmt.setString(2, msg);
         errorStmt.setTimestamp(3, new Timestamp(System.currentTimeMillis()));

@@ -4,15 +4,12 @@ public class Answer {
 
     private final Item item;
     private final String value;
-    
+
     public String error;
 
     public Answer(Item item, String value) {
-        if (value != null) {
-            value = value.trim();
-        }
         this.item = item;
-        this.value = value;
+        this.value = (value == null) ? null : value.trim();
     }
 
     public Item getItem() {
@@ -29,7 +26,7 @@ public class Answer {
         }
         try {
             String v = value;
-            if ("Number".equals(item.getDataType())) {
+            if (Dictionary.ITEM_DECIMAL.equals(item.getDataType())) {
                 v = "" + Integer.parseInt(v);
             }
             if (item.hasValueSets()) {
@@ -55,5 +52,5 @@ public class Answer {
     public String getError() {
         return error;
     }
-    
+
 }

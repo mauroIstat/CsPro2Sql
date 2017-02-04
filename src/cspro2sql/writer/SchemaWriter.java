@@ -58,7 +58,7 @@ public class SchemaWriter {
             case Dictionary.ITEM_ALPHA:
                 ps.println("    " + name + " CHAR(" + length + "),");
                 break;
-            case "Number":
+            case Dictionary.ITEM_DECIMAL:
                 ps.println("    " + name + " INT(" + length + "),");
                 break;
         }
@@ -77,7 +77,7 @@ public class SchemaWriter {
                 case Dictionary.ITEM_ALPHA:
                     ps.println("    ID CHAR(" + item.getLength() + "),");
                     break;
-                case "Number":
+                case Dictionary.ITEM_DECIMAL:
                     ps.println("    ID INT(" + item.getLength() + "),");
                     break;
             }
@@ -122,7 +122,7 @@ public class SchemaWriter {
         ps.println("CREATE TABLE IF NOT EXISTS " + schema + ".CSPRO2SQL_ERRORS (");
         ps.println("    `ID` int(11) NOT NULL AUTO_INCREMENT,");
         ps.println("    `DICTIONARY` int(11) NOT NULL,");
-        ps.println("    `ERROR` varchar(2048) COLLATE utf8mb4_unicode_ci NOT NULL,");
+        ps.println("    `ERROR` longtext COLLATE utf8mb4_unicode_ci NOT NULL,");
         ps.println("    `DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,");
         ps.println("    `CSPRO_GUID` binary(16) NOT NULL,");
         ps.println("    `QUESTIONNAIRE` longtext COLLATE utf8mb4_unicode_ci NOT NULL,");

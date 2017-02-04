@@ -98,13 +98,13 @@ public class MonitorWriter {
         out.println(") as name, null as household");
         out.println("  UNION");
         out.print("  SELECT concat(");
-        if (eaDescription[0]==null || eaDescription[0].isEmpty()) {
+        if (eaDescription[0] == null || eaDescription[0].isEmpty()) {
             out.print("h." + ea[0]);
         } else {
             out.print("vs0.value");
         }
         for (int i = 1; i < ea.length; i++) {
-            if (eaDescription[i]==null || eaDescription[i].isEmpty()) {
+            if (eaDescription[i] == null || eaDescription[i].isEmpty()) {
                 out.print(",'#',h." + ea[i]);
             } else {
                 out.print(",'#',vs" + i + ".value");
@@ -113,7 +113,7 @@ public class MonitorWriter {
         out.println(") as name, COUNT(0) AS `household`");
         out.println("  FROM " + schema + "." + params.get("@QUESTIONNAIRE_TABLE") + " `h`");
         for (int i = 0; i < ea.length; i++) {
-            if (eaDescription[i]!=null && !eaDescription[i].isEmpty()) {
+            if (eaDescription[i] != null && !eaDescription[i].isEmpty()) {
                 out.println("    JOIN " + schema + "." + eaDescription[i] + " vs" + i + " ON `h`.`" + ea[i] + "` = vs" + i + ".`ID`");
             }
         }
@@ -198,7 +198,7 @@ public class MonitorWriter {
             out.println("CREATE TABLE " + schema + ".m" + name + " AS SELECT " + name + ".* FROM " + schema + "." + name + ";");
         } else {
             out.println("SELECT @ID := 0;");
-            out.println("CREATE TABLE " + schema + ".m" + name + " AS SELECT @ID := @ID + 1 ID, " + name + ".* FROM " + schema + "." + name + ";");
+            out.println("CREATE TABLE " + schema + ".m" + name + " (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, " + name + ".* FROM " + schema + "." + name + ";");
         }
         out.println("INSERT INTO " + schema + ".`cspro2sql_stats` VALUES ('" + name + "');");
         out.println();

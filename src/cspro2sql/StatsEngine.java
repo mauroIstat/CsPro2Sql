@@ -47,16 +47,20 @@ public class StatsEngine {
                     prop.getProperty("db.dest.password"));
             connDst.setAutoCommit(false);
 
-            Statement readDst = connDst.createStatement();
-            Statement writeDst = connDst.createStatement();
-
-            ResultSet rs = readDst.executeQuery("SELECT * FROM " + schema + ".cspro2sql_stats");
-            while (rs.next()) {
-                String template = rs.getString(1);
-                writeDst.executeUpdate("TRUNCATE " + schema + ".m" + template);
-                writeDst.executeQuery("SELECT @ID := 0");
-                writeDst.executeUpdate("INSERT INTO " + schema + ".m" + template + " SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
-                connDst.commit();
+            try (Statement readDst = connDst.createStatement()) {
+                try (Statement writeDst = connDst.createStatement()) {
+                    try (ResultSet rs = readDst.executeQuery("SELECT * FROM " + schema + ".cspro2sql_stats")) {
+                        while (rs.next()) {
+                            String template = rs.getString(1);
+                            System.out.print("Updating " + template + "... ");
+                            writeDst.executeUpdate("TRUNCATE " + schema + ".m" + template);
+                            writeDst.executeQuery("SELECT @ID := 0");
+                            writeDst.executeUpdate("INSERT INTO " + schema + ".m" + template + " SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
+                            connDst.commit();
+                            System.out.println("done");
+                        }
+                    }
+                }
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | SQLException ex) {
             try {

@@ -15,7 +15,7 @@ public final class Item {
     private Record record;
     private String name;
     private String valueSetName;
-    private String dataType = "Number";
+    private String dataType = Dictionary.ITEM_DECIMAL;
     private int start;
     private int length;
     private int occurrences;

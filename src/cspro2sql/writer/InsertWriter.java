@@ -47,11 +47,12 @@ public class InsertWriter {
                         selectSql += item.getName() + "='" + value.getValue() + "'";
                     }
                 }
-                ResultSet executeQuery = stmt.executeQuery(selectSql);
-                exists = executeQuery.next();
-                if (exists) {
-                    id = executeQuery.getInt(1);
-                    continue;
+                try (ResultSet executeQuery = stmt.executeQuery(selectSql)) {
+                    exists = executeQuery.next();
+                    if (exists) {
+                        id = executeQuery.getInt(1);
+                        continue;
+                    }
                 }
             }
 
@@ -68,15 +69,14 @@ public class InsertWriter {
             if (record.isMainRecord()) {
                 System.out.println("select last_insert_id();");
             }
-            */
-
+             */
             if (exists && !record.isMainRecord()) {
                 if (script != null) {
                     script.append("delete from ").append(schema).append(".").append(record.getTableName()).append(" where ").append(record.getMainRecord().getName()).append("=").append(id).append(";\n");
                 }
                 stmt.executeUpdate("delete from " + schema + "." + record.getTableName() + " where " + record.getMainRecord().getName() + "=" + id);
             }
-            if (script!=null) {
+            if (script != null) {
                 script.append(PreparedStatementManager.getSqlCode(record, id, e.getValue(), schema)).append(";\n");
             }
             PreparedStatementManager.execute(record);
@@ -84,9 +84,10 @@ public class InsertWriter {
                 if (script != null) {
                     script.append("select last_insert_id();\n");
                 }
-                ResultSet lastInsertId = stmt.executeQuery("select last_insert_id()");
-                lastInsertId.next();
-                id = lastInsertId.getInt(1);
+                try (ResultSet lastInsertId = stmt.executeQuery("select last_insert_id()")) {
+                    lastInsertId.next();
+                    id = lastInsertId.getInt(1);
+                }
             }
         }
     }
