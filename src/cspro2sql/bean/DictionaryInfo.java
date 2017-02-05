@@ -1,5 +1,6 @@
 package cspro2sql.bean;
 
+import java.io.InputStream;
 import java.io.PrintStream;
 
 public class DictionaryInfo {
@@ -24,14 +25,16 @@ public class DictionaryInfo {
     private final int revision;
     private final int total;
     private final int loaded;
+    private final InputStream lastGuid;
 
-    public DictionaryInfo(int id, String name, int status, int revision, int total, int loaded) {
+    public DictionaryInfo(int id, String name, int status, int revision, int total, int loaded, InputStream lastGuid) {
         this.id = id;
         this.name = name;
         this.status = (status == 1) ? Status.RUNNING : Status.STOP;
         this.revision = revision;
         this.total = total;
         this.loaded = loaded;
+        this.lastGuid = lastGuid;
     }
 
     public int getId() {
@@ -56,6 +59,10 @@ public class DictionaryInfo {
 
     public int getLoaded() {
         return loaded;
+    }
+
+    public InputStream getLastGuid() {
+        return lastGuid;
     }
 
     public boolean isRunning() {

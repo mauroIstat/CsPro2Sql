@@ -23,6 +23,8 @@ import org.apache.commons.cli.ParseException;
  */
 public class Main {
 
+    private static final String VERSION = "0.8";
+
     public static void main(String[] args) {
         //Get command line options
         CsPro2SqlOptions opts = getCommandLineOptions(args);
@@ -40,11 +42,11 @@ public class Main {
         if (opts.schemaEngine) {
             error = !SchemaEngine.execute(dictionary, opts.prop, opts.foreignKeys, opts.ps);
         } else if (opts.loaderEngine) {
-            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force);
+            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery);
         } else if (opts.monitorEngine) {
             error = !MonitorEngine.execute(dictionary, opts.prop, opts.ps);
-        } else if (opts.statsEngine) {
-            error = !StatsEngine.execute(dictionary, opts.prop);
+        } else if (opts.updateEngine) {
+            error = !UpdateEngine.execute(dictionary, opts.prop);
         } else if (opts.statusEngine) {
             error = !StatusEngine.execute(opts.prop);
         }
@@ -60,12 +62,14 @@ public class Main {
         options.addOption("o", "output", true, "name of the output file containing the script");
         options.addOption("fk", "foreign-keys", false, "create foreign keys to value sets");
         options.addOption("h", "help", false, "display help");
-        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|stats|status]");
+        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status]");
         options.addOption("p", "properties", true, "properties file");
         options.addOption("a", "all", false, "transers all the records");
         options.addOption("cc", "check-constraints", false, "perform constraints check");
         options.addOption("co", "check-only", false, "perform only constraints check");
         options.addOption("f", "force", false, "do not check if a loader is still running");
+        options.addOption("r", "recovery", false, "recover a broken session of the loader");
+        options.addOption("v", "version", false, "print the version of the programm");
 
         CsPro2SqlOptions opts = new CsPro2SqlOptions(options);
         //Start parsing command line
@@ -75,6 +79,9 @@ public class Main {
 
             if (cmd.hasOption("h") || args.length == 0) { //help option or empty option
                 opts.printHelp();
+            }
+            if (cmd.hasOption("v")) {
+                opts.printVersion();
             }
 
             if (!cmd.hasOption("e")) { //Loader engine option provided
@@ -98,13 +105,14 @@ public class Main {
                 opts.checkOnly = cmd.hasOption("co");
                 opts.allRecords = cmd.hasOption("a");
                 opts.force = cmd.hasOption("f");
+                opts.recovery = cmd.hasOption("r");
             } else if ("monitor".equals(engine)) {
                 opts.monitorEngine = true;
                 if (cmd.hasOption("o")) { //Output file name provided
                     opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
                 }
-            } else if ("stats".equals(engine)) {
-                opts.statsEngine = true;
+            } else if ("update".equals(engine)) {
+                opts.updateEngine = true;
             } else if ("status".equals(engine)) {
                 opts.statusEngine = true;
             } else {
@@ -143,13 +151,14 @@ public class Main {
         boolean schemaEngine;
         boolean loaderEngine;
         boolean monitorEngine;
-        boolean statsEngine;
+        boolean updateEngine;
         boolean statusEngine;
         boolean allRecords;
         boolean foreignKeys;
         boolean checkConstraints;
         boolean checkOnly;
         boolean force;
+        boolean recovery;
         String dictFile;
         String schema;
         String tablePrefix;
@@ -173,16 +182,22 @@ public class Main {
             }
             formatter.printHelp("\n\n"
                     + "CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]\n"
-                    + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f]\n"
+                    + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r]\n"
                     + "CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
-                    + "CsPro2Sql -e stats   -p PROPERTIES_FILE\n"
+                    + "CsPro2Sql -e update  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e status  -p PROPERTIES_FILE\n"
+                    + "CsPro2Sql -v\n"
                     + "\n", options);
             if (errMessage == null) {
                 System.exit(0);
             } else {
                 System.exit(1);
             }
+        }
+
+        void printVersion() {
+            System.out.println("CsPro2Sql - version " + VERSION);
+            System.exit(0);
         }
     }
 

@@ -15,11 +15,11 @@ import java.util.Properties;
  *
  * @author Istat Cooperation Unit
  */
-public class StatsEngine {
+public class UpdateEngine {
 
     public static void main(String[] args) throws Exception {
         Properties prop = new Properties();
-        try (InputStream in = StatsEngine.class.getResourceAsStream("/database.properties")) {
+        try (InputStream in = UpdateEngine.class.getResourceAsStream("/database.properties")) {
             prop.load(in);
         } catch (IOException ex) {
             return;

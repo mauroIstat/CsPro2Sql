@@ -45,13 +45,13 @@ public class LoaderEngine {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
                     prop.getProperty("db.dest.table.prefix"));
-            execute(dictionary, prop, true, false, false, false);
+            execute(dictionary, prop, true, false, false, false, false);
         } catch (Exception ex) {
             System.exit(1);
         }
     }
 
-    static boolean execute(Dictionary dictionary, Properties prop, boolean allRecords, boolean checkConstraints, boolean checkOnly, boolean force) {
+    static boolean execute(Dictionary dictionary, Properties prop, boolean allRecords, boolean checkConstraints, boolean checkOnly, boolean force, boolean recovery) {
         boolean errors = false;
         SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
 
@@ -83,12 +83,15 @@ public class LoaderEngine {
                     // TODO retrieve max revision from source db
                     int maxRevision = 100;
 
-                    // TODO read last loaded guid (recovery mode)
-                    InputStream firstGuid = null;
-
-                    if (!dictionaryQuery.run(idDictionary, force)) {
+                    if ((dictionaryInfo = dictionaryQuery.run(idDictionary, force, recovery)) == null) {
                         System.out.println("An instance of the LOADER is still runnning!");
                         return false;
+                    }
+
+                    // TODO guid is not working
+                    InputStream firstGuid = null;
+                    if (recovery && !force) {
+                        firstGuid = dictionaryInfo.getLastGuid();
                     }
 
                     ResultSet result;
@@ -116,7 +119,8 @@ public class LoaderEngine {
                         System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro to MySql... [" + lastRevision + " -> " + maxRevision + "]");
                     }
 
-                    int totalCompleted = 0, total = 0;
+                    int totalCompleted = dictionaryInfo.getLoaded();
+                    int total = dictionaryInfo.getTotal();
                     try (Statement stmtDst = connDst.createStatement()) {
                         stmtDst.executeQuery("SET unique_checks=0");
                         stmtDst.executeQuery("SET foreign_key_checks=0");
@@ -147,7 +151,7 @@ public class LoaderEngine {
                                 } else {
                                     int completed = commitList(dictionary, quests, idDictionary, stmtDst, dictionaryQuery);
                                     totalCompleted += completed;
-                                    dictionaryQuery.updateLoaded(idDictionary, totalCompleted, total);
+                                    dictionaryQuery.updateLoaded(idDictionary, totalCompleted, total, quests.get(quests.size() - 1).getGuid());
                                     if (!chunkError && completed == quests.size()) {
                                         System.out.print('+');
                                     } else {
