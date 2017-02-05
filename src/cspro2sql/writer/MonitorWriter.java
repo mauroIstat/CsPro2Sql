@@ -1,10 +1,7 @@
 package cspro2sql.writer;
 
-import cspro2sql.MonitorEngine;
-import java.io.BufferedReader;
+import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Map;
 
@@ -54,7 +51,7 @@ public class MonitorWriter {
 
         try {
             for (String template : TEMPLATES) {
-                printTemplate(template, params, out);
+                TemplateManager.printTemplate(template, params, out);
                 printMaterialized(schema, template, out);
             }
         } catch (IOException ex) {
@@ -171,22 +168,6 @@ public class MonitorWriter {
         printMaterialized(schema, "r_household_by_ea", false, out);
          */
         return true;
-    }
-
-    private static void printTemplate(String template, Map<String, String> params, PrintStream ps) throws IOException {
-        try (InputStream in = MonitorEngine.class.getResourceAsStream("/cspro2sql/sql/" + template + ".sql")) {
-            try (InputStreamReader isr = new InputStreamReader(in, "UTF-8")) {
-                try (BufferedReader br = new BufferedReader(isr)) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        for (Map.Entry<String, String> e : params.entrySet()) {
-                            line = line.replace(e.getKey(), e.getValue());
-                        }
-                        ps.println(line);
-                    }
-                }
-            }
-        }
     }
 
     private static void printMaterialized(String schema, String name, PrintStream out) {

@@ -36,51 +36,35 @@ public class StatsEngine {
 
     static boolean execute(Dictionary dictionary, Properties prop) {
         String schema = prop.getProperty("db.dest.schema");
-        Connection connDst = null;
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
 
             //Connect to the destination database
-            connDst = DriverManager.getConnection(
+            try (Connection connDst = DriverManager.getConnection(
                     prop.getProperty("db.dest.uri") + "/" + prop.getProperty("db.dest.schema") + "?autoReconnect=true&useSSL=false",
                     prop.getProperty("db.dest.username"),
-                    prop.getProperty("db.dest.password"));
-            connDst.setAutoCommit(false);
+                    prop.getProperty("db.dest.password"))) {
+                connDst.setAutoCommit(false);
 
-            try (Statement readDst = connDst.createStatement()) {
-                try (Statement writeDst = connDst.createStatement()) {
-                    try (ResultSet rs = readDst.executeQuery("SELECT * FROM " + schema + ".cspro2sql_stats")) {
-                        while (rs.next()) {
-                            String template = rs.getString(1);
-                            System.out.print("Updating " + template + "... ");
-                            writeDst.executeUpdate("TRUNCATE " + schema + ".m" + template);
-                            writeDst.executeQuery("SELECT @ID := 0");
-                            writeDst.executeUpdate("INSERT INTO " + schema + ".m" + template + " SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
-                            connDst.commit();
-                            System.out.println("done");
+                try (Statement readDst = connDst.createStatement()) {
+                    try (Statement writeDst = connDst.createStatement()) {
+                        try (ResultSet rs = readDst.executeQuery("SELECT * FROM " + schema + ".cspro2sql_stats")) {
+                            while (rs.next()) {
+                                String template = rs.getString(1);
+                                System.out.print("Updating " + template + "... ");
+                                writeDst.executeUpdate("TRUNCATE " + schema + ".m" + template);
+                                writeDst.executeQuery("SELECT @ID := 0");
+                                writeDst.executeUpdate("INSERT INTO " + schema + ".m" + template + " SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
+                                connDst.commit();
+                                System.out.println("done");
+                            }
                         }
                     }
                 }
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | SQLException ex) {
-            try {
-                if (connDst != null) {
-                    connDst.rollback();
-                }
-            } catch (SQLException ex1) {
-                System.out.println("Rollback failure");
-                return false;
-            }
             System.out.println("Database exception (" + ex.getMessage() + ")");
-        } finally {
-            try {
-                if (connDst != null) {
-                    connDst.close();
-                }
-            } catch (SQLException ex) {
-                System.out.println("Impossible to close the db conenction");
-                return false;
-            }
+            return false;
         }
         return true;
     }

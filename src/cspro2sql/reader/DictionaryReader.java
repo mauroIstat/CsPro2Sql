@@ -1,4 +1,3 @@
-
 package cspro2sql.reader;
 
 import cspro2sql.bean.BeanFactory;
@@ -10,23 +9,24 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
- * This class reads the CSPro Dictionary creating a data structure that represents the dictionary
- * 
+ * This class reads the CSPro Dictionary creating a data structure that
+ * represents the dictionary
+ *
  * @author Istat Cooperation Unit
  */
 public class DictionaryReader {
-    
+
     public static Dictionary read(String fileName, String tablePrefix) throws Exception {
         Dictionary dictionary = new Dictionary();
         boolean isLocalFile = new File(fileName).exists();
-        try (InputStream in =
-                (isLocalFile?
-                    new FileInputStream(fileName):
-                    DictionaryReader.class.getResourceAsStream("/"+fileName))) {
-            try (InputStreamReader fr = new InputStreamReader(in,"UTF-8")) {
+        try (InputStream in
+                = (isLocalFile
+                        ? new FileInputStream(fileName)
+                        : DictionaryReader.class.getResourceAsStream("/" + fileName))) {
+            try (InputStreamReader fr = new InputStreamReader(in, "UTF-8")) {
                 try (BufferedReader br = new BufferedReader(fr)) {
                     String line;
-                    while ( (line=br.readLine())!=null ) {
+                    while ((line = br.readLine()) != null) {
                         switch (line) {
                             case Dictionary.DICT_LEVEL:
                             case Dictionary.DICT_RECORD:
@@ -38,6 +38,7 @@ public class DictionaryReader {
                             case Dictionary.DICT_VALUESET:
                                 dictionary.addValueSet(BeanFactory.createValueSet(br));
                                 break;
+                            default:
                         }
                     }
                 }
@@ -45,5 +46,5 @@ public class DictionaryReader {
         }
         return dictionary;
     }
-    
+
 }

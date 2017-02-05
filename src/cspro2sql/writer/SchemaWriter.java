@@ -4,9 +4,13 @@ import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.ValueSet;
+import cspro2sql.sql.TemplateManager;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -17,13 +21,24 @@ import java.util.Set;
  */
 public class SchemaWriter {
 
-    public static void write(String schema, boolean foreignKeys, Dictionary dictionary, PrintStream ps) {
+    public static void write(Dictionary dictionary, Properties prop, boolean foreignKeys, PrintStream ps) {
+        String schema = prop.getProperty("db.dest.schema");
+        String sourceDataTable = prop.getProperty("db.source.data.table");
+
         ps.println("CREATE SCHEMA IF NOT EXISTS " + schema + ";");
         ps.println();
         ps.println("USE " + schema + ";");
         ps.println();
 
-        printSystemTables(schema, ps);
+        try {
+            Map<String, String> params = new HashMap<>();
+            params.put("@SCHEMA", schema);
+            params.put("@SOURCE_DATA_TABLE", sourceDataTable);
+            TemplateManager.printTemplate("cspro2sql_dictionary", params, ps);
+            TemplateManager.printTemplate("cspro2sql_error", params, ps);
+        } catch (IOException ex) {
+            return;
+        }
 
         for (Record record : dictionary.getRecords()) {
             for (Item item : record.getItems()) {
@@ -61,6 +76,7 @@ public class SchemaWriter {
             case Dictionary.ITEM_DECIMAL:
                 ps.println("    " + name + " INT(" + length + "),");
                 break;
+            default:
         }
         if (foreignKeys && item.hasValueSets()) {
             ps.println("    FOREIGN KEY (" + name + ") REFERENCES " + schema + "." + item.getValueSetName() + "(ID),");
@@ -80,6 +96,7 @@ public class SchemaWriter {
                 case Dictionary.ITEM_DECIMAL:
                     ps.println("    ID INT(" + item.getLength() + "),");
                     break;
+                default:
             }
             ps.println("    VALUE CHAR(" + item.getValueSetsValueLength() + "),");
             ps.println("    PRIMARY KEY (ID)");
@@ -109,29 +126,6 @@ public class SchemaWriter {
         for (Item subItem : item.getSubItems()) {
             printValueSet(schema, subItem, ps);
         }
-    }
-
-    private static void printSystemTables(String schema, PrintStream ps) {
-        ps.println("CREATE TABLE IF NOT EXISTS " + schema + ".CSPRO2SQL_DICTIONARY (");
-        ps.println("    `ID` int(11) NOT NULL AUTO_INCREMENT,");
-        ps.println("    `NAME` varchar(200) NOT NULL,");
-        ps.println("    `REVISION` int(11) NOT NULL DEFAULT '0',");
-        ps.println("    PRIMARY KEY (`ID`)");
-        ps.println(") ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-        ps.println();
-        ps.println("CREATE TABLE IF NOT EXISTS " + schema + ".CSPRO2SQL_ERRORS (");
-        ps.println("    `ID` int(11) NOT NULL AUTO_INCREMENT,");
-        ps.println("    `DICTIONARY` int(11) NOT NULL,");
-        ps.println("    `ERROR` longtext COLLATE utf8mb4_unicode_ci NOT NULL,");
-        ps.println("    `DATE` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,");
-        ps.println("    `CSPRO_GUID` binary(16) NOT NULL,");
-        ps.println("    `QUESTIONNAIRE` longtext COLLATE utf8mb4_unicode_ci NOT NULL,");
-        ps.println("    `SQL_SCRIPT` longtext COLLATE utf8mb4_unicode_ci NOT NULL,");
-        ps.println("    PRIMARY KEY (`ID`),");
-        ps.println("    KEY `dictionary_idx` (`DICTIONARY`),");
-        ps.println("    CONSTRAINT `dictionary` FOREIGN KEY (`DICTIONARY`) REFERENCES " + schema + ".`cspro2sql_dictionary` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION");
-        ps.println(") ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-        ps.println();
     }
 
 }

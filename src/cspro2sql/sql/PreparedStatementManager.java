@@ -50,6 +50,7 @@ public class PreparedStatementManager {
                         insertPS.setString(field++, v);
                     }
                     break;
+                default:
             }
         }
         insertPS.addBatch();

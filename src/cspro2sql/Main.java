@@ -40,11 +40,13 @@ public class Main {
         if (opts.schemaEngine) {
             error = !SchemaEngine.execute(dictionary, opts.prop, opts.foreignKeys, opts.ps);
         } else if (opts.loaderEngine) {
-            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly);
+            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force);
         } else if (opts.monitorEngine) {
             error = !MonitorEngine.execute(dictionary, opts.prop, opts.ps);
         } else if (opts.statsEngine) {
             error = !StatsEngine.execute(dictionary, opts.prop);
+        } else if (opts.statusEngine) {
+            error = !StatusEngine.execute(opts.prop);
         }
         opts.ps.close();
 
@@ -58,11 +60,12 @@ public class Main {
         options.addOption("o", "output", true, "name of the output file containing the script");
         options.addOption("fk", "foreign-keys", false, "create foreign keys to value sets");
         options.addOption("h", "help", false, "display help");
-        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|stats]");
+        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|stats|status]");
         options.addOption("p", "properties", true, "properties file");
         options.addOption("a", "all", false, "transers all the records");
         options.addOption("cc", "check-constraints", false, "perform constraints check");
         options.addOption("co", "check-only", false, "perform only constraints check");
+        options.addOption("f", "force", false, "do not check if a loader is still running");
 
         CsPro2SqlOptions opts = new CsPro2SqlOptions(options);
         //Start parsing command line
@@ -93,9 +96,8 @@ public class Main {
                 opts.loaderEngine = true;
                 opts.checkConstraints = cmd.hasOption("cc");
                 opts.checkOnly = cmd.hasOption("co");
-                if (cmd.hasOption("a")) {
-                    opts.allRecords = true;
-                }
+                opts.allRecords = cmd.hasOption("a");
+                opts.force = cmd.hasOption("f");
             } else if ("monitor".equals(engine)) {
                 opts.monitorEngine = true;
                 if (cmd.hasOption("o")) { //Output file name provided
@@ -103,6 +105,8 @@ public class Main {
                 }
             } else if ("stats".equals(engine)) {
                 opts.statsEngine = true;
+            } else if ("status".equals(engine)) {
+                opts.statusEngine = true;
             } else {
                 opts.printHelp("Wrong engine type!");
             }
@@ -136,14 +140,16 @@ public class Main {
 
     private static class CsPro2SqlOptions {
 
-        boolean schemaEngine = false;
-        boolean loaderEngine = false;
-        boolean monitorEngine = false;
-        boolean statsEngine = false;
-        boolean allRecords = false;
-        boolean foreignKeys = false;
-        boolean checkConstraints = false;
-        boolean checkOnly = false;
+        boolean schemaEngine;
+        boolean loaderEngine;
+        boolean monitorEngine;
+        boolean statsEngine;
+        boolean statusEngine;
+        boolean allRecords;
+        boolean foreignKeys;
+        boolean checkConstraints;
+        boolean checkOnly;
+        boolean force;
         String dictFile;
         String schema;
         String tablePrefix;
@@ -167,9 +173,10 @@ public class Main {
             }
             formatter.printHelp("\n\n"
                     + "CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]\n"
-                    + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co]\n"
+                    + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f]\n"
                     + "CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e stats   -p PROPERTIES_FILE\n"
+                    + "CsPro2Sql -e status  -p PROPERTIES_FILE\n"
                     + "\n", options);
             if (errMessage == null) {
                 System.exit(0);

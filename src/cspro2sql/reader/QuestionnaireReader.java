@@ -70,6 +70,7 @@ public class QuestionnaireReader {
                     case Dictionary.ITEM_ALPHA:
                         values.add(new Answer(item, v));
                         break;
+                    default:
                 }
             }
         }

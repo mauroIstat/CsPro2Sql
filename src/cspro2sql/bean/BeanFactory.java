@@ -101,13 +101,13 @@ public final class BeanFactory {
             int b = Integer.parseInt(ss[0].split(":")[1]);
             for (; a <= b; a++) {
                 valueSet.addValue("" + a, ss[1]);
-                if (valueSet.size() > 10000) {
+                if (valueSet.size() > 1000) {
                     return false;
                 }
             }
         } else {
             valueSet.addValue(ss[0], ss[1]);
-            if (valueSet.size() > 10000) {
+            if (valueSet.size() > 1000) {
                 return false;
             }
         }
