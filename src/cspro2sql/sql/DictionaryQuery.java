@@ -51,7 +51,7 @@ public class DictionaryQuery {
                         result.getInt("REVISION"),
                         result.getInt("TOTAL"),
                         result.getInt("LOADED"),
-                        result.getBinaryStream("LAST_GUID"));
+                        result.getBytes("LAST_GUID"));
             }
         } catch (SQLException ex) {
             return null;
@@ -70,7 +70,7 @@ public class DictionaryQuery {
                         result.getInt("REVISION"),
                         result.getInt("TOTAL"),
                         result.getInt("LOADED"),
-                        result.getBinaryStream("LAST_GUID"));
+                        result.getBytes("LAST_GUID"));
             }
         } catch (SQLException ex) {
             return null;

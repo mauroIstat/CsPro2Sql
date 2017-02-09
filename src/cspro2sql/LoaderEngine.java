@@ -89,7 +89,7 @@ public class LoaderEngine {
                     }
 
                     // TODO guid is not working
-                    InputStream firstGuid = null;
+                    byte[] firstGuid = null;
                     if (recovery && !force) {
                         firstGuid = dictionaryInfo.getLastGuid();
                     }
@@ -108,7 +108,7 @@ public class LoaderEngine {
                             selectQuestionnaire.setInt(2, maxRevision);
                         } else {
                             selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
-                            selectQuestionnaire.setBinaryStream(1, firstGuid);
+                            selectQuestionnaire.setBytes(1, firstGuid);
                             selectQuestionnaire.setInt(2, lastRevision);
                             selectQuestionnaire.setInt(3, maxRevision);
                         }
