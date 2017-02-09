@@ -1,6 +1,7 @@
 package cspro2sql.bean;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 
 public class DictionaryInfo {
 
@@ -34,7 +35,7 @@ public class DictionaryInfo {
         this.revision = revision;
         this.total = total;
         this.loaded = loaded;
-        this.lastGuid = lastGuid;
+        this.lastGuid = (lastGuid == null ? null : Arrays.copyOf(lastGuid, lastGuid.length));
         this.nextRevision = nextRevision;
     }
 
@@ -63,7 +64,7 @@ public class DictionaryInfo {
     }
 
     public byte[] getLastGuid() {
-        return lastGuid;
+        return lastGuid == null ? null : Arrays.copyOf(lastGuid, lastGuid.length);
     }
 
     public int getNextRevision() {

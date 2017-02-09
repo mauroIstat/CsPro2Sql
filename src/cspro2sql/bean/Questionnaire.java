@@ -1,5 +1,6 @@
 package cspro2sql.bean;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,11 +37,11 @@ public class Questionnaire {
     }
 
     public byte[] getGuid() {
-        return guid;
+        return (guid == null ? null : Arrays.copyOf(guid, guid.length));
     }
 
     public void setGuid(byte[] guid) {
-        this.guid = guid;
+        this.guid = (guid == null ? null : Arrays.copyOf(guid, guid.length));
     }
 
     public String getSchema() {
