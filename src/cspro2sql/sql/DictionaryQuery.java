@@ -2,7 +2,6 @@ package cspro2sql.sql;
 
 import cspro2sql.bean.DictionaryInfo;
 import cspro2sql.bean.Questionnaire;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -106,11 +105,11 @@ public class DictionaryQuery {
         return true;
     }
 
-    public boolean updateLoaded(int dictionaryId, int loaded, int total, InputStream lastGuid) {
+    public boolean updateLoaded(int dictionaryId, int loaded, int total, byte[] lastGuid) {
         try {
             updateLoaded.setInt(1, total);
             updateLoaded.setInt(2, loaded);
-            updateLoaded.setBinaryStream(3, lastGuid);
+            updateLoaded.setBytes(3, lastGuid);
             updateLoaded.setInt(4, dictionaryId);
             updateLoaded.executeUpdate();
             updateLoaded.getConnection().commit();
@@ -136,7 +135,7 @@ public class DictionaryQuery {
         insertError.setInt(1, dictionaryId);
         insertError.setString(2, msg);
         insertError.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
-        insertError.setBinaryStream(4, q.getGuid());
+        insertError.setBytes(4, q.getGuid());
         insertError.setString(5, q.getPlainText());
         insertError.setString(6, script);
         insertError.executeUpdate();

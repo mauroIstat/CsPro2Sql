@@ -1,6 +1,5 @@
 package cspro2sql.bean;
 
-import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,7 +13,7 @@ public class Questionnaire {
     private final List<String> checkErrors = new LinkedList<>();
 
     private String schema;
-    private InputStream guid;
+    private byte[] guid;
 
     public Questionnaire(String plainText) {
         this.plainText = plainText;
@@ -36,11 +35,11 @@ public class Questionnaire {
         return plainText;
     }
 
-    public InputStream getGuid() {
+    public byte[] getGuid() {
         return guid;
     }
 
-    public void setGuid(InputStream guid) {
+    public void setGuid(byte[] guid) {
         this.guid = guid;
     }
 

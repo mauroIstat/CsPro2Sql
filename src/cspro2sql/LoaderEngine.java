@@ -129,7 +129,7 @@ public class LoaderEngine {
                         List<Questionnaire> quests = new LinkedList<>();
                         while (result.next()) {
                             String questionnaire = result.getString(1);
-                            InputStream guid = result.getBinaryStream(2);
+                            byte[] guid = result.getBytes(2);
                             //Get the microdata parsing CSPro plain text files according to its dictionary
                             Questionnaire microdata = QuestionnaireReader.parse(dictionary, questionnaire);
                             microdata.setGuid(guid);
@@ -151,18 +151,21 @@ public class LoaderEngine {
                                 } else {
                                     int completed = commitList(dictionary, quests, idDictionary, stmtDst, dictionaryQuery);
                                     totalCompleted += completed;
-                                    dictionaryQuery.updateLoaded(idDictionary, totalCompleted, total, quests.get(quests.size() - 1).getGuid());
-                                    if (!chunkError && completed == quests.size()) {
-                                        System.out.print('+');
-                                    } else {
+                                    dictionaryQuery.updateLoaded(idDictionary, totalCompleted, total, guid);
+                                    if (completed != quests.size()) {
+                                        chunkError = true;
+                                    }
+                                    if (chunkError) {
                                         System.out.print('-');
                                         errors = true;
+                                    } else {
+                                        System.out.print('+');
                                     }
-                                    quests.clear();
                                 }
-                                selectQuestionnaire.setBinaryStream(1, guid);
+                                quests.clear();
                                 result.close();
                                 chunkError = false;
+                                selectQuestionnaire.setBytes(1, guid);
                                 result = selectQuestionnaire.executeQuery();
                             }
                         }
