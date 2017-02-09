@@ -11,11 +11,12 @@ import java.sql.Timestamp;
 public class DictionaryQuery {
 
     private static final String DICTIONARY_UPDATE_REVISION = "update CSPRO2SQL_DICTIONARY set REVISION = ? where ID = ?";
-    private static final String DICTIONARY_SELECT_INFO_BY_ID = "select ID, NAME, STATUS, REVISION, TOTAL, LOADED, LAST_GUID from CSPRO2SQL_DICTIONARY where ID = ?";
-    private static final String DICTIONARY_SELECT_INFO_BY_NAME = "select ID, NAME, STATUS, REVISION, TOTAL, LOADED, LAST_GUID from CSPRO2SQL_DICTIONARY where NAME = ?";
+    private static final String DICTIONARY_SELECT_INFO_BY_ID = "select ID, NAME, STATUS, REVISION, TOTAL, LOADED, LAST_GUID, NEXT_REVISION from CSPRO2SQL_DICTIONARY where ID = ?";
+    private static final String DICTIONARY_SELECT_INFO_BY_NAME = "select ID, NAME, STATUS, REVISION, TOTAL, LOADED, LAST_GUID, NEXT_REVISION from CSPRO2SQL_DICTIONARY where NAME = ?";
     private static final String DICTIONARY_UPDATE_STATUS_RUN = "update CSPRO2SQL_DICTIONARY set STATUS = 1, TOTAL = 0, LOADED = 0 where ID = ?";
     private static final String DICTIONARY_UPDATE_STATUS_RECOVERY = "update CSPRO2SQL_DICTIONARY set STATUS = 1 where ID = ?";
     private static final String DICTIONARY_UPDATE_STATUS_STOP = "update CSPRO2SQL_DICTIONARY set STATUS = 0 where ID = ?";
+    private static final String DICTIONARY_UPDATE_NEXT_REVISION = "update CSPRO2SQL_DICTIONARY set NEXT_REVISION = ? where ID = ?";
     private static final String DICTIONARY_UPDATE_LOADED = "update CSPRO2SQL_DICTIONARY set TOTAL = ?, LOADED = ?, LAST_GUID = ? where ID = ?";
     private static final String DICTIONARY_INSERT_ERROR = "insert into CSPRO2SQL_ERROR (DICTIONARY, ERROR, DATE, CSPRO_GUID, QUESTIONNAIRE, SQL_SCRIPT) values (?,?,?,?,?,?)";
 
@@ -25,6 +26,7 @@ public class DictionaryQuery {
     private final PreparedStatement updateStatusRun;
     private final PreparedStatement updateStatusRecovery;
     private final PreparedStatement updateStatusStop;
+    private final PreparedStatement updateNextRevision;
     private final PreparedStatement updateLoaded;
     private final PreparedStatement insertError;
 
@@ -35,6 +37,7 @@ public class DictionaryQuery {
         updateStatusRun = conn.prepareStatement(DICTIONARY_UPDATE_STATUS_RUN);
         updateStatusRecovery = conn.prepareStatement(DICTIONARY_UPDATE_STATUS_RECOVERY);
         updateStatusStop = conn.prepareStatement(DICTIONARY_UPDATE_STATUS_STOP);
+        updateNextRevision = conn.prepareStatement(DICTIONARY_UPDATE_NEXT_REVISION);
         updateLoaded = conn.prepareStatement(DICTIONARY_UPDATE_LOADED);
         insertError = conn.prepareStatement(DICTIONARY_INSERT_ERROR);
     }
@@ -51,7 +54,8 @@ public class DictionaryQuery {
                         result.getInt("REVISION"),
                         result.getInt("TOTAL"),
                         result.getInt("LOADED"),
-                        result.getBytes("LAST_GUID"));
+                        result.getBytes("LAST_GUID"),
+                        result.getInt("NEXT_REVISION"));
             }
         } catch (SQLException ex) {
             return null;
@@ -70,14 +74,15 @@ public class DictionaryQuery {
                         result.getInt("REVISION"),
                         result.getInt("TOTAL"),
                         result.getInt("LOADED"),
-                        result.getBytes("LAST_GUID"));
+                        result.getBytes("LAST_GUID"),
+                        result.getInt("NEXT_REVISION"));
             }
         } catch (SQLException ex) {
             return null;
         }
     }
 
-    public DictionaryInfo run(int dictionaryId, boolean force, boolean recovery) {
+    public DictionaryInfo run(int dictionaryId, boolean force, boolean recovery, int nextRevision) {
         try {
             if (!force && !recovery) {
                 DictionaryInfo.Status status = getDictionaryInfo(dictionaryId).getStatus();
@@ -85,6 +90,9 @@ public class DictionaryQuery {
                     return null;
                 }
             }
+            updateNextRevision.setInt(1, nextRevision);
+            updateNextRevision.setInt(2, dictionaryId);
+            updateNextRevision.executeUpdate();
             if (recovery && !force) {
                 setStatus(dictionaryId, updateStatusRecovery);
             } else {

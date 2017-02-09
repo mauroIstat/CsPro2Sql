@@ -10,7 +10,7 @@ import java.util.Map;
 public class TemplateManager {
 
     public static void printTemplate(String template, Map<String, String> params, PrintStream ps) throws IOException {
-        try (InputStream in = TemplateManager.class.getResourceAsStream("/cspro2sql/sql/" + template + ".sql")) {
+        try (InputStream in = TemplateManager.class.getResourceAsStream("/cspro2sql/sql/template/" + template + ".sql")) {
             try (InputStreamReader isr = new InputStreamReader(in, "UTF-8")) {
                 try (BufferedReader br = new BufferedReader(isr)) {
                     String line;

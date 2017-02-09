@@ -24,30 +24,13 @@ public class MonitorWriter {
         out.println("USE " + schema + ";");
         out.println();
 
-        out.println("CREATE TABLE " + schema + ".`c_user` (\n"
-                + "  `ID` int(11) NOT NULL AUTO_INCREMENT,\n"
-                + "  `FIRSTNAME` varchar(45) DEFAULT NULL,\n"
-                + "  `MIDDLENAME` varchar(45) DEFAULT NULL,\n"
-                + "  `LASTNAME` varchar(45) DEFAULT NULL,\n"
-                + "  `EMAIL` varchar(256) DEFAULT NULL,\n"
-                + "  `PASSWORD` varchar(64) DEFAULT NULL,\n"
-                + "  PRIMARY KEY (`ID`),\n"
-                + "  UNIQUE KEY `EMAIL_UNIQUE` (`EMAIL`(255))\n"
-                + ") ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-        out.println();
-
-        out.println("CREATE TABLE " + schema + ".`c_user_roles` (\n"
-                + "  `EMAIL` varchar(256) NOT NULL,\n"
-                + "  `ROLE` varchar(45) DEFAULT NULL,\n"
-                + "  UNIQUE KEY `EMAIL_UNIQUE` (`EMAIL`(256), `ROLE`(45))\n"
-                + ") ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-        out.println();
-
-        out.println("CREATE TABLE " + schema + ".`cspro2sql_stats` (\n"
-                + "  `NAME` varchar(256) NOT NULL,\n"
-                + "  PRIMARY KEY (`name`)\n"
-                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
-        out.println();
+        try {
+            TemplateManager.printTemplate("c_user", params, out);
+            TemplateManager.printTemplate("c_user_roles", params, out);
+            TemplateManager.printTemplate("cspro2sql_stats", params, out);
+        } catch (IOException ex) {
+            return false;
+        }
 
         try {
             for (String template : TEMPLATES) {
@@ -121,52 +104,7 @@ public class MonitorWriter {
         }
         out.println(";");
         printMaterialized(schema, "r_household_by_ea", out);
-        /*
-        out.println("CREATE VIEW " + schema + ".`r_household_by_ea` AS");
-        String id = "h." + ea[0];
-        String parent = null;
-        String group = ea[0];
-        String join = "";
-        String joinName = "null";
-        if (eaDescription.length > 0) {
-            join = " JOIN " + schema + "." + eaDescription[0] + " vs ON h." + ea[0] + " = vs.ID";
-            joinName = "vs.value";
-        }
-        out.println("SELECT \n"
-                + "        concat(" + id + ") AS id,\n"
-                + "        '" + eaName[0] + "' AS description,\n"
-                + "        " + joinName + " AS name,\n"
-                + "        h." + ea[0] + " as level_id,\n"
-                + "        concat(" + parent + ") AS parent,\n"
-                + "        COUNT(0) AS `household`\n"
-                + "    FROM\n"
-                + "        " + schema + "." + params.get("@QUESTIONNAIRE_TABLE") + " `h`" + join + "\n"
-                + "    GROUP BY " + group);
-        for (int i = 1; i < ea.length; i++) {
-            group += "," + ea[i];
-            parent = id;
-            id += ",'#',h." + ea[i];
-            join = "";
-            joinName = "null";
-            if (eaDescription.length > i) {
-                join = " JOIN " + schema + "." + eaDescription[i] + " vs ON h." + ea[i] + " = vs.ID";
-                joinName = "vs.value";
-            }
-            out.println("UNION");
-            out.println("SELECT \n"
-                    + "        concat(" + id + ") AS id,\n"
-                    + "        '" + eaName[i] + "' AS description,\n"
-                    + "        " + joinName + " AS name,\n"
-                    + "        h." + ea[i] + " as level_id,\n"
-                    + "        concat(" + parent + ") AS parent,\n"
-                    + "        COUNT(0) AS `household`\n"
-                    + "    FROM\n"
-                    + "        " + schema + "." + params.get("@QUESTIONNAIRE_TABLE") + " `h`" + join + "\n"
-                    + "    GROUP BY " + group);
-        }
-        out.println(";");
-        printMaterialized(schema, "r_household_by_ea", false, out);
-         */
+
         return true;
     }
 

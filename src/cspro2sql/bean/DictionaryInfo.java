@@ -25,8 +25,9 @@ public class DictionaryInfo {
     private final int total;
     private final int loaded;
     private final byte[] lastGuid;
+    private final int nextRevision;
 
-    public DictionaryInfo(int id, String name, int status, int revision, int total, int loaded, byte[] lastGuid) {
+    public DictionaryInfo(int id, String name, int status, int revision, int total, int loaded, byte[] lastGuid, int nextRevision) {
         this.id = id;
         this.name = name;
         this.status = (status == 1) ? Status.RUNNING : Status.STOP;
@@ -34,6 +35,7 @@ public class DictionaryInfo {
         this.total = total;
         this.loaded = loaded;
         this.lastGuid = lastGuid;
+        this.nextRevision = nextRevision;
     }
 
     public int getId() {
@@ -64,6 +66,10 @@ public class DictionaryInfo {
         return lastGuid;
     }
 
+    public int getNextRevision() {
+        return nextRevision;
+    }
+
     public boolean isRunning() {
         return status == Status.RUNNING;
     }
@@ -73,6 +79,7 @@ public class DictionaryInfo {
         out.println("Revision: " + revision);
         out.println("Loader status: " + (status.name()));
         if (status == Status.RUNNING) {
+            out.println("Load to revision: " + nextRevision);
             out.println("Loaded: " + loaded);
             out.println("Total: " + total);
         }

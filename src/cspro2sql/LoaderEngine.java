@@ -80,18 +80,20 @@ public class LoaderEngine {
                     int idDictionary = dictionaryInfo.getId();
                     int lastRevision = dictionaryInfo.getRevision();
 
-                    // TODO retrieve max revision from source db
-                    int maxRevision = 100;
-
-                    if ((dictionaryInfo = dictionaryQuery.run(idDictionary, force, recovery)) == null) {
-                        System.out.println("An instance of the LOADER is still runnning!");
-                        return false;
-                    }
-
-                    // TODO guid is not working
-                    byte[] firstGuid = null;
+                    int nextRevision;
+                    byte[] firstGuid;
                     if (recovery && !force) {
                         firstGuid = dictionaryInfo.getLastGuid();
+                        nextRevision = dictionaryInfo.getNextRevision();
+                    } else {
+                        // TODO retrieve max revision from source db
+                        firstGuid = null;
+                        nextRevision = 100;
+                    }
+
+                    if ((dictionaryInfo = dictionaryQuery.run(idDictionary, force, recovery, nextRevision)) == null) {
+                        System.out.println("An instance of the LOADER is still runnning!");
+                        return false;
                     }
 
                     ResultSet result;
@@ -105,18 +107,18 @@ public class LoaderEngine {
                         if (firstGuid == null) {
                             selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                             selectQuestionnaire.setInt(1, lastRevision);
-                            selectQuestionnaire.setInt(2, maxRevision);
+                            selectQuestionnaire.setInt(2, nextRevision);
                         } else {
                             selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                             selectQuestionnaire.setBytes(1, firstGuid);
                             selectQuestionnaire.setInt(2, lastRevision);
-                            selectQuestionnaire.setInt(3, maxRevision);
+                            selectQuestionnaire.setInt(3, nextRevision);
                         }
                         result = selectQuestionnaire.executeQuery();
                         selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                         selectQuestionnaire.setInt(2, lastRevision);
-                        selectQuestionnaire.setInt(3, maxRevision);
-                        System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro to MySql... [" + lastRevision + " -> " + maxRevision + "]");
+                        selectQuestionnaire.setInt(3, nextRevision);
+                        System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro to MySql... [" + lastRevision + " -> " + nextRevision + "]");
                     }
 
                     int totalCompleted = dictionaryInfo.getLoaded();
@@ -172,7 +174,7 @@ public class LoaderEngine {
                         System.out.println();
 
                         if (!checkOnly) {
-                            dictionaryQuery.updateRevision(idDictionary, maxRevision);
+                            dictionaryQuery.updateRevision(idDictionary, nextRevision);
                         }
 
                         stmtDst.executeQuery("SET foreign_key_checks=1");
