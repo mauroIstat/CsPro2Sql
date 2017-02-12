@@ -97,13 +97,17 @@ public final class BeanFactory {
             ss[1] = ss[1].split("[" + Dictionary.DICT_LABEL_LANGUAGE_SEPARATOR + "]")[0];
         }
         if (ss[0].contains(":")) {
-            int a = Integer.parseInt(ss[0].split(":")[0]);
-            int b = Integer.parseInt(ss[0].split(":")[1]);
-            for (; a <= b; a++) {
-                valueSet.addValue("" + a, ss[1]);
-                if (valueSet.size() > 1000) {
-                    return false;
+            try {
+                int a = Integer.parseInt(ss[0].split(":")[0]);
+                int b = Integer.parseInt(ss[0].split(":")[1]);
+                for (; a <= b; a++) {
+                    valueSet.addValue("" + a, ss[1]);
+                    if (valueSet.size() > 1000) {
+                        return false;
+                    }
                 }
+            } catch (NumberFormatException ex) {
+                return false;
             }
         } else {
             valueSet.addValue(ss[0], ss[1]);
