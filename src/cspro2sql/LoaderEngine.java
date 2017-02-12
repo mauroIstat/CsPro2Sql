@@ -86,9 +86,13 @@ public class LoaderEngine {
                         firstGuid = dictionaryInfo.getLastGuid();
                         nextRevision = dictionaryInfo.getNextRevision();
                     } else {
-                        // TODO retrieve max revision from source db
                         firstGuid = null;
-                        nextRevision = 100;
+                        try (Statement stmt = connSrc.createStatement()) {
+                            try (ResultSet r = stmt.executeQuery("select max(revision) from " + srcSchema + "." + srcDataTable)) {
+                                r.next();
+                                nextRevision = r.getInt(1);
+                            }
+                        }
                     }
 
                     if ((dictionaryInfo = dictionaryQuery.run(idDictionary, force, recovery, nextRevision)) == null) {

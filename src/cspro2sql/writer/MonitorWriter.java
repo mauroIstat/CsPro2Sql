@@ -3,7 +3,6 @@ package cspro2sql.writer;
 import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Map;
 
 /**
  *
@@ -19,22 +18,26 @@ public class MonitorWriter {
         "r_sex_by_region"
     };
 
-    public static boolean write(String schema, String[] ea, String[] eaName, String[] eaDescription,
-            int[] ageRange, Map<String, String> params, PrintStream out) {
+    public static boolean write(String schema, TemplateManager tm, PrintStream out) {
         out.println("USE " + schema + ";");
         out.println();
 
+        String[] ea = tm.getEa();
+        String[] eaName = tm.getEaName();
+        String[] eaDescription = tm.getEaDescription();
+        int[] ageRange = tm.getAgeRange();
+
         try {
-            TemplateManager.printTemplate("c_user", params, out);
-            TemplateManager.printTemplate("c_user_roles", params, out);
-            TemplateManager.printTemplate("cspro2sql_stats", params, out);
+            tm.printTemplate("c_user", out);
+            tm.printTemplate("c_user_roles", out);
+            tm.printTemplate("cspro2sql_stats", out);
         } catch (IOException ex) {
             return false;
         }
 
         try {
             for (String template : TEMPLATES) {
-                TemplateManager.printTemplate(template, params, out);
+                tm.printTemplate(template, out);
                 printMaterialized(schema, template, out);
             }
         } catch (IOException ex) {
@@ -44,12 +47,12 @@ public class MonitorWriter {
         out.println("CREATE VIEW " + schema + ".`r_regional_area` AS");
         String groupBy = ea[0];
         String name = eaName[0];
-        out.print("  SELECT '" + name + "' name, COUNT(0) value FROM (SELECT COUNT(0) FROM " + schema + "." + params.get("@QUESTIONNAIRE_TABLE") + " GROUP BY " + groupBy + ") a0");
+        out.print("  SELECT '" + name + "' name, COUNT(0) value FROM (SELECT COUNT(0) FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " GROUP BY " + groupBy + ") a0");
         for (int i = 1; i < ea.length; i++) {
             name = eaName[i];
             groupBy += "," + ea[i];
             out.println(" UNION");
-            out.print("  SELECT '" + name + "', COUNT(0) FROM (SELECT COUNT(0) FROM " + schema + "." + params.get("@QUESTIONNAIRE_TABLE") + " GROUP BY " + groupBy + ") a" + i);
+            out.print("  SELECT '" + name + "', COUNT(0) FROM (SELECT COUNT(0) FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " GROUP BY " + groupBy + ") a" + i);
         }
         out.println();
         out.println(";");
@@ -57,13 +60,13 @@ public class MonitorWriter {
 
         out.println("CREATE VIEW " + schema + ".`r_sex_by_age_group` AS");
         out.print("  SELECT '" + ageRange[0] + " to " + (ageRange[1] - 1) + "' as 'range', a.male, b.female FROM "
-                + "(SELECT COUNT(0) male FROM " + schema + "." + params.get("@INDIVIDUAL_TABLE") + " WHERE " + params.get("@INDIVIDUAL_COLUMN_SEX") + " = " + params.get("@INDIVIDUAL_VALUE_SEX_MALE") + " AND " + params.get("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[0] + " AND " + params.get("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[1] + ") a,"
-                + "(SELECT COUNT(0) female FROM " + schema + "." + params.get("@INDIVIDUAL_TABLE") + " WHERE " + params.get("@INDIVIDUAL_COLUMN_SEX") + " = " + params.get("@INDIVIDUAL_VALUE_SEX_FEMALE") + " AND " + params.get("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[0] + " AND " + params.get("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[1] + ") b");
+                + "(SELECT COUNT(0) male FROM " + schema + "." + tm.getParam("@INDIVIDUAL_TABLE") + " WHERE " + tm.getParam("@INDIVIDUAL_COLUMN_SEX") + " = " + tm.getParam("@INDIVIDUAL_VALUE_SEX_MALE") + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[0] + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[1] + ") a,"
+                + "(SELECT COUNT(0) female FROM " + schema + "." + tm.getParam("@INDIVIDUAL_TABLE") + " WHERE " + tm.getParam("@INDIVIDUAL_COLUMN_SEX") + " = " + tm.getParam("@INDIVIDUAL_VALUE_SEX_FEMALE") + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[0] + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[1] + ") b");
         for (int i = 1; i < ageRange.length - 1; i++) {
             out.println(" UNION");
             out.print("  SELECT '" + ageRange[i] + " to " + (ageRange[i + 1] - 1) + "' as 'range', a.male, b.female FROM "
-                    + "(SELECT COUNT(0) male FROM " + schema + "." + params.get("@INDIVIDUAL_TABLE") + " WHERE " + params.get("@INDIVIDUAL_COLUMN_SEX") + " = " + params.get("@INDIVIDUAL_VALUE_SEX_MALE") + " AND " + params.get("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[i] + " AND " + params.get("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[i + 1] + ") a,"
-                    + "(SELECT COUNT(0) female FROM " + schema + "." + params.get("@INDIVIDUAL_TABLE") + " WHERE " + params.get("@INDIVIDUAL_COLUMN_SEX") + " = " + params.get("@INDIVIDUAL_VALUE_SEX_FEMALE") + " AND " + params.get("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[i] + " AND " + params.get("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[i + 1] + ") b");
+                    + "(SELECT COUNT(0) male FROM " + schema + "." + tm.getParam("@INDIVIDUAL_TABLE") + " WHERE " + tm.getParam("@INDIVIDUAL_COLUMN_SEX") + " = " + tm.getParam("@INDIVIDUAL_VALUE_SEX_MALE") + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[i] + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[i + 1] + ") a,"
+                    + "(SELECT COUNT(0) female FROM " + schema + "." + tm.getParam("@INDIVIDUAL_TABLE") + " WHERE " + tm.getParam("@INDIVIDUAL_COLUMN_SEX") + " = " + tm.getParam("@INDIVIDUAL_VALUE_SEX_FEMALE") + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[i] + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[i + 1] + ") b");
         }
         out.println();
         out.println(";");
@@ -91,7 +94,7 @@ public class MonitorWriter {
             }
         }
         out.println(") as name, COUNT(0) AS `household`");
-        out.println("  FROM " + schema + "." + params.get("@QUESTIONNAIRE_TABLE") + " `h`");
+        out.println("  FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " `h`");
         for (int i = 0; i < ea.length; i++) {
             if (eaDescription[i] != null && !eaDescription[i].isEmpty()) {
                 out.println("    JOIN " + schema + "." + eaDescription[i] + " vs" + i + " ON `h`.`" + ea[i] + "` = vs" + i + ".`ID`");

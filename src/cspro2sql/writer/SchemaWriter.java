@@ -7,7 +7,6 @@ import cspro2sql.bean.ValueSet;
 import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -22,8 +21,8 @@ import java.util.Set;
 public class SchemaWriter {
 
     public static void write(Dictionary dictionary, Properties prop, boolean foreignKeys, PrintStream ps) {
+        TemplateManager tm = new TemplateManager(dictionary, prop);
         String schema = prop.getProperty("db.dest.schema");
-        String sourceDataTable = prop.getProperty("db.source.data.table");
 
         ps.println("CREATE SCHEMA IF NOT EXISTS " + schema + ";");
         ps.println();
@@ -31,11 +30,8 @@ public class SchemaWriter {
         ps.println();
 
         try {
-            Map<String, String> params = new HashMap<>();
-            params.put("@SCHEMA", schema);
-            params.put("@SOURCE_DATA_TABLE", sourceDataTable);
-            TemplateManager.printTemplate("cspro2sql_dictionary", params, ps);
-            TemplateManager.printTemplate("cspro2sql_error", params, ps);
+            tm.printTemplate("cspro2sql_dictionary", ps);
+            tm.printTemplate("cspro2sql_error", ps);
         } catch (IOException ex) {
             return;
         }

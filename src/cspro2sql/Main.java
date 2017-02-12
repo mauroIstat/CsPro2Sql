@@ -8,6 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -32,11 +37,34 @@ public class Main {
 
         //Parse the dictionary
         Dictionary dictionary = null;
-        try {
-            dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix);
-        } catch (Exception ex) {
-            opts.ps.close();
-            opts.printHelp("Impossible to read dictionary file (" + ex.getMessage() + ")");
+        if (opts.dictFile != null && !opts.dictFile.isEmpty()) {
+            try {
+                dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix);
+            } catch (IOException ex) {
+                opts.ps.close();
+                opts.printHelp("Impossible to read dictionary file (" + ex.getMessage() + ")");
+            }
+        } else {
+            try {
+                Class.forName("com.mysql.jdbc.Driver").newInstance();
+                String srcSchema = opts.prop.getProperty("db.source.schema");
+                String srcDataTable = opts.prop.getProperty("db.source.data.table");
+                try (Connection connSrc = DriverManager.getConnection(
+                        opts.prop.getProperty("db.source.uri") + "/" + srcSchema + "?autoReconnect=true&useSSL=false",
+                        opts.prop.getProperty("db.source.username"),
+                        opts.prop.getProperty("db.source.password"))) {
+                    connSrc.setReadOnly(true);
+                    try (Statement stmt = connSrc.createStatement()) {
+                        try (ResultSet r = stmt.executeQuery("select dictionary_full_content from " + srcSchema + ".cspro_dictionaries where dictionary_name = '" + srcDataTable + "'")) {
+                            r.next();
+                            dictionary = DictionaryReader.readFromString(r.getString(1), opts.tablePrefix);
+                        }
+                    }
+                }
+            } catch (ClassNotFoundException | SQLException | IOException | InstantiationException | IllegalAccessException ex) {
+                opts.ps.close();
+                System.err.println("Impossibile to read dictionary from database (" + ex.getMessage() + ")");
+            }
         }
 
         if (opts.schemaEngine) {
@@ -134,9 +162,6 @@ public class Main {
 
         opts.prop = prop;
         opts.dictFile = prop.getProperty("dictionary.filename");
-        if (opts.dictFile == null || opts.dictFile.isEmpty()) {
-            opts.printHelp("The input dictionary file is mandatory!\nPlease set 'dictionary.filename' into the properties file");
-        }
         opts.schema = prop.getProperty("db.dest.schema");
         if (opts.schema == null || opts.schema.isEmpty()) {
             opts.printHelp("The database schema is mandatory!\nPlease set 'db.dest.schema' into the properties file");
