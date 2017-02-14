@@ -16,7 +16,6 @@ Libraries:
 * Apache Commons CLI ([commons-cli-1.3.1.jar](https://commons.apache.org/proper/commons-cli/download_cli.cgi))
 * MySQL Connector/J 5.1.40 ([mysql-connector-java-5.1.40-bin.jar](https://dev.mysql.com/downloads/connector/j/))
 
-
 ## Installation
 
 CsPro2Sql is simple to install: all you need is to download and unzip the `CsPro2Sql.zip`. Depending on your system execute from the command line `CsPro2Sql.bat` or `CsPro2Sql.sh`.
@@ -106,6 +105,11 @@ To monitor the loader activity run:
 ```
 > CsPro2Sql -e status -p Household.properties
 ```
+
+## Warnings
+
+* The CsPro tag `[Relation]` is ignored
+* A `ValueSet` with more than 1000 elements is ignored (the threshold will be parameterized in future realesed)
 
 ## Acknowledgement
 The team responsible of [Census and Survey Processing System (CSPro)](https://www.census.gov/population/international/software/cspro/) 
