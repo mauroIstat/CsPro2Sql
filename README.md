@@ -2,7 +2,7 @@
 
 CsPro2Sql is a Java application to migrate questionnaires from [CsPro 7.0](http://www.csprousers.org/beta/) to a MySQL database.
 
-The MySQL database will contain the microdata ie. a column per each variable (`Item`) defined in the dictionary.
+The MySQL database will contain the microdata ie. a column per each variable (`Item`) defined in the CsPro-Dictionary.
 
 ## Requirements
 
