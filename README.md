@@ -19,7 +19,7 @@ Libraries:
 
 ## Installation
 
-CsPro2Sql is simple to install: all you need is to download the `CsPro2Sql` folder. Depending on your system execute from the command line `CsPro2Sql.bat` or `CsPro2Sql.sh`.
+CsPro2Sql is simple to install: all you need is to download and unzip the `CsPro2Sql.zip`. Depending on your system execute from the command line `CsPro2Sql.bat` or `CsPro2Sql.sh`.
 
 ## Usage
 

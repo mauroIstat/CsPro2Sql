@@ -102,15 +102,15 @@ public class Main {
 
     private static CsPro2SqlOptions getCommandLineOptions(String[] args) {
         Options options = new Options();
-        options.addOption("o", "output", true, "name of the output file containing the script");
-        options.addOption("fk", "foreign-keys", false, "create foreign keys to value sets");
-        options.addOption("h", "help", false, "display help");
-        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status]");
-        options.addOption("p", "properties", true, "properties file");
-        options.addOption("a", "all", false, "transers all the records");
+        options.addOption("a", "all", false, "transfer all the questionnaires");
         options.addOption("cc", "check-constraints", false, "perform constraints check");
-        options.addOption("co", "check-only", false, "perform only constraints check");
-        options.addOption("f", "force", false, "do not check if a loader is still running");
+        options.addOption("co", "check-only", false, "perform only constraints check (no data transfer)");
+        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status]");
+        options.addOption("f", "force", false, "skip check of loader multiple running instances");
+        options.addOption("fk", "foreign-keys", false, "create foreign keys to value sets");
+        options.addOption("h", "help", false, "display this help");
+        options.addOption("o", "output", true, "name of the output file");
+        options.addOption("p", "properties", true, "properties file");
         options.addOption("r", "recovery", false, "recover a broken session of the loader");
         options.addOption("v", "version", false, "print the version of the programm");
 
