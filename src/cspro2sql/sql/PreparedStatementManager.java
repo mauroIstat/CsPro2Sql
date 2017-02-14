@@ -40,7 +40,6 @@ public class PreparedStatementManager {
         String key = record.getName();
         PreparedStatement insertPS = RECORDS_LIST.get(key);
         insertPS.executeBatch();
-        //insertPS.clearParameters();
     }
 
     public static void populateInsertPreparedStatement(Record record, int id, int index, List<Answer> values, String schema, Connection conn) throws SQLException {

@@ -31,13 +31,13 @@ import java.sql.Timestamp;
 public class DictionaryQuery {
 
     private static final String DICTIONARY_UPDATE_REVISION = "update CSPRO2SQL_DICTIONARY set REVISION = ? where ID = ?";
-    private static final String DICTIONARY_SELECT_INFO_BY_ID = "select ID, NAME, STATUS, REVISION, TOTAL, LOADED, LAST_GUID, NEXT_REVISION from CSPRO2SQL_DICTIONARY where ID = ?";
-    private static final String DICTIONARY_SELECT_INFO_BY_NAME = "select ID, NAME, STATUS, REVISION, TOTAL, LOADED, LAST_GUID, NEXT_REVISION from CSPRO2SQL_DICTIONARY where NAME = ?";
-    private static final String DICTIONARY_UPDATE_STATUS_RUN = "update CSPRO2SQL_DICTIONARY set STATUS = 1, TOTAL = 0, LOADED = 0 where ID = ?";
+    private static final String DICTIONARY_SELECT_INFO_BY_ID = "select ID, NAME, STATUS, REVISION, TOTAL, LOADED, DELETED, ERRORS, LAST_GUID, NEXT_REVISION from CSPRO2SQL_DICTIONARY where ID = ?";
+    private static final String DICTIONARY_SELECT_INFO_BY_NAME = "select ID, NAME, STATUS, REVISION, TOTAL, LOADED, DELETED, ERRORS, LAST_GUID, NEXT_REVISION from CSPRO2SQL_DICTIONARY where NAME = ?";
+    private static final String DICTIONARY_UPDATE_STATUS_RUN = "update CSPRO2SQL_DICTIONARY set STATUS = 1, TOTAL = 0, LOADED = 0, DELETED = 0, ERRORS = 0 where ID = ?";
     private static final String DICTIONARY_UPDATE_STATUS_RECOVERY = "update CSPRO2SQL_DICTIONARY set STATUS = 1 where ID = ?";
     private static final String DICTIONARY_UPDATE_STATUS_STOP = "update CSPRO2SQL_DICTIONARY set STATUS = 0 where ID = ?";
     private static final String DICTIONARY_UPDATE_NEXT_REVISION = "update CSPRO2SQL_DICTIONARY set NEXT_REVISION = ? where ID = ?";
-    private static final String DICTIONARY_UPDATE_LOADED = "update CSPRO2SQL_DICTIONARY set TOTAL = ?, LOADED = ?, LAST_GUID = ? where ID = ?";
+    private static final String DICTIONARY_UPDATE_LOADED = "update CSPRO2SQL_DICTIONARY set TOTAL = ?, LOADED = ?, DELETED = ?, ERRORS = ?, LAST_GUID = ? where ID = ?";
     private static final String DICTIONARY_INSERT_ERROR = "insert into CSPRO2SQL_ERROR (DICTIONARY, ERROR, DATE, CSPRO_GUID, QUESTIONNAIRE, SQL_SCRIPT) values (?,?,?,?,?,?)";
 
     private final PreparedStatement selectInfoById;
@@ -74,6 +74,8 @@ public class DictionaryQuery {
                         result.getInt("REVISION"),
                         result.getInt("TOTAL"),
                         result.getInt("LOADED"),
+                        result.getInt("DELETED"),
+                        result.getInt("ERRORS"),
                         result.getBytes("LAST_GUID"),
                         result.getInt("NEXT_REVISION"));
             }
@@ -94,6 +96,8 @@ public class DictionaryQuery {
                         result.getInt("REVISION"),
                         result.getInt("TOTAL"),
                         result.getInt("LOADED"),
+                        result.getInt("DELETED"),
+                        result.getInt("ERRORS"),
                         result.getBytes("LAST_GUID"),
                         result.getInt("NEXT_REVISION"));
             }
@@ -102,43 +106,45 @@ public class DictionaryQuery {
         }
     }
 
-    public DictionaryInfo run(int dictionaryId, boolean force, boolean recovery, int nextRevision) {
+    public DictionaryInfo run(DictionaryInfo dictionaryInfo, boolean force, boolean recovery) {
         try {
             if (!force && !recovery) {
-                DictionaryInfo.Status status = getDictionaryInfo(dictionaryId).getStatus();
+                DictionaryInfo.Status status = getDictionaryInfo(dictionaryInfo.getId()).getStatus();
                 if (status == DictionaryInfo.Status.RUNNING) {
                     return null;
                 }
             }
-            updateNextRevision.setInt(1, nextRevision);
-            updateNextRevision.setInt(2, dictionaryId);
+            updateNextRevision.setInt(1, dictionaryInfo.getNextRevision());
+            updateNextRevision.setInt(2, dictionaryInfo.getId());
             updateNextRevision.executeUpdate();
             if (recovery && !force) {
-                setStatus(dictionaryId, updateStatusRecovery);
+                setStatus(dictionaryInfo.getId(), updateStatusRecovery);
             } else {
-                setStatus(dictionaryId, updateStatusRun);
+                setStatus(dictionaryInfo.getId(), updateStatusRun);
             }
-            return getDictionaryInfo(dictionaryId);
+            return getDictionaryInfo(dictionaryInfo.getId());
         } catch (SQLException ex) {
             return null;
         }
     }
 
-    public boolean stop(int dictionaryId) {
+    public boolean stop(DictionaryInfo dictionaryInfo) {
         try {
-            setStatus(dictionaryId, updateStatusStop);
+            setStatus(dictionaryInfo.getId(), updateStatusStop);
         } catch (SQLException ex) {
             return false;
         }
         return true;
     }
 
-    public boolean updateLoaded(int dictionaryId, int loaded, int total, byte[] lastGuid) {
+    public boolean updateLoaded(DictionaryInfo info) {
         try {
-            updateLoaded.setInt(1, total);
-            updateLoaded.setInt(2, loaded);
-            updateLoaded.setBytes(3, lastGuid);
-            updateLoaded.setInt(4, dictionaryId);
+            updateLoaded.setInt(1, info.getTotal());
+            updateLoaded.setInt(2, info.getLoaded());
+            updateLoaded.setInt(3, info.getDeleted());
+            updateLoaded.setInt(4, info.getErrors());
+            updateLoaded.setBytes(5, info.getLastGuid());
+            updateLoaded.setInt(6, info.getId());
             updateLoaded.executeUpdate();
             updateLoaded.getConnection().commit();
         } catch (SQLException ex) {
@@ -147,10 +153,10 @@ public class DictionaryQuery {
         return true;
     }
 
-    public boolean updateRevision(int dictionaryId, int revision) {
+    public boolean updateRevision(DictionaryInfo dictionaryInfo) {
         try {
-            updateRevision.setInt(1, revision);
-            updateRevision.setInt(2, dictionaryId);
+            updateRevision.setInt(1, dictionaryInfo.getNextRevision());
+            updateRevision.setInt(2, dictionaryInfo.getId());
             updateRevision.executeUpdate();
             updateRevision.getConnection().commit();
         } catch (SQLException ex) {
@@ -159,8 +165,8 @@ public class DictionaryQuery {
         return true;
     }
 
-    public void writeError(int dictionaryId, String msg, Questionnaire q, String script) throws SQLException {
-        insertError.setInt(1, dictionaryId);
+    public void writeError(DictionaryInfo dictionaryInfo, String msg, Questionnaire q, String script) throws SQLException {
+        insertError.setInt(1, dictionaryInfo.getId());
         insertError.setString(2, msg);
         insertError.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
         insertError.setBytes(4, q.getGuid());

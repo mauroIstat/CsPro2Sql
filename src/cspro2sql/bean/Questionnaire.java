@@ -30,14 +30,17 @@ import java.util.Set;
 public class Questionnaire {
 
     private final String plainText;
+    private final String schema;
+    private final byte[] guid;
+    private final boolean deleted;
     private final Map<Record, List<List<Answer>>> microdata = new LinkedHashMap<>();
     private final List<String> checkErrors = new LinkedList<>();
 
-    private String schema;
-    private byte[] guid;
-
-    public Questionnaire(String plainText) {
+    public Questionnaire(String plainText, String schema, byte[] guid, boolean deleted) {
         this.plainText = plainText;
+        this.schema = schema;
+        this.guid = (guid == null ? null : Arrays.copyOf(guid, guid.length));
+        this.deleted = deleted;
     }
 
     public void setRecordValues(Record record, List<List<Answer>> valuesList) {
@@ -60,16 +63,12 @@ public class Questionnaire {
         return (guid == null ? null : Arrays.copyOf(guid, guid.length));
     }
 
-    public void setGuid(byte[] guid) {
-        this.guid = (guid == null ? null : Arrays.copyOf(guid, guid.length));
-    }
-
     public String getSchema() {
         return schema;
     }
 
-    public void setSchema(String schema) {
-        this.schema = schema;
+    public boolean isDeleted() {
+        return deleted;
     }
 
     public boolean checkValueSets() {

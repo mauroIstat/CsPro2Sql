@@ -50,7 +50,7 @@ public class TemplateManager {
         this.params.put("@QUESTIONNAIRE_TABLE", mainRecord.getTableName());
         this.params.put("@QUESTIONNAIRE_COLUMN_BASE", mainRecord.getName());
 
-        if (prop.contains("column.questionnaire.ea")) {
+        if (prop.containsKey("column.questionnaire.ea")) {
             this.ea = prop.getProperty("column.questionnaire.ea").split(",");
             this.eaName = Arrays.copyOf(prop.getProperty("column.questionnaire.ea.name").split(","), ea.length);
             this.eaDescription = Arrays.copyOf(prop.getProperty("column.questionnaire.ea.description").split(","), ea.length);
@@ -67,7 +67,7 @@ public class TemplateManager {
             this.eaDescription = null;
         }
 
-        if (prop.contains("range.individual.age")) {
+        if (prop.containsKey("range.individual.age")) {
             String[] ageRangeS = prop.getProperty("range.individual.age").split(",");
             this.ageRange = new int[ageRangeS.length];
             for (int i = 0; i < ageRangeS.length; i++) {

@@ -6,6 +6,7 @@ import cspro2sql.bean.Questionnaire;
 import cspro2sql.reader.DictionaryReader;
 import cspro2sql.reader.QuestionnaireReader;
 import cspro2sql.sql.DictionaryQuery;
+import cspro2sql.writer.DeleteWriter;
 import cspro2sql.writer.InsertWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +41,7 @@ import java.util.logging.Logger;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @version 0.9
  */
@@ -110,7 +111,8 @@ public class LoaderEngine {
                         }
                     }
 
-                    if ((dictionaryInfo = dictionaryQuery.run(idDictionary, force, recovery, nextRevision)) == null) {
+                    dictionaryInfo.setNextRevision(nextRevision);
+                    if ((dictionaryInfo = dictionaryQuery.run(dictionaryInfo, force, recovery)) == null) {
                         System.out.println("An instance of the LOADER is still runnning!");
                         return false;
                     }
@@ -118,30 +120,28 @@ public class LoaderEngine {
                     ResultSet result;
                     PreparedStatement selectQuestionnaire;
                     if (allRecords) {
-                        selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " order by guid limit " + MAX_COMMIT_SIZE);
+                        selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " order by guid limit " + MAX_COMMIT_SIZE);
                         result = selectQuestionnaire.executeQuery();
-                        selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? order by guid limit " + MAX_COMMIT_SIZE);
+                        selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " where guid > ? order by guid limit " + MAX_COMMIT_SIZE);
                         System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro to MySql... [all records]");
                     } else {
                         if (firstGuid == null) {
-                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
+                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " where revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                             selectQuestionnaire.setInt(1, lastRevision);
                             selectQuestionnaire.setInt(2, nextRevision);
                         } else {
-                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
+                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                             selectQuestionnaire.setBytes(1, firstGuid);
                             selectQuestionnaire.setInt(2, lastRevision);
                             selectQuestionnaire.setInt(3, nextRevision);
                         }
                         result = selectQuestionnaire.executeQuery();
-                        selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
+                        selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                         selectQuestionnaire.setInt(2, lastRevision);
                         selectQuestionnaire.setInt(3, nextRevision);
                         System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro to MySql... [" + lastRevision + " -> " + nextRevision + "]");
                     }
 
-                    int totalCompleted = dictionaryInfo.getLoaded();
-                    int total = dictionaryInfo.getTotal();
                     try (Statement stmtDst = connDst.createStatement()) {
                         stmtDst.executeQuery("SET unique_checks=0");
                         stmtDst.executeQuery("SET foreign_key_checks=0");
@@ -151,17 +151,19 @@ public class LoaderEngine {
                         while (result.next()) {
                             String questionnaire = result.getString(1);
                             byte[] guid = result.getBytes(2);
-                            //Get the microdata parsing CSPro plain text files according to its dictionary
-                            Questionnaire microdata = QuestionnaireReader.parse(dictionary, questionnaire);
-                            microdata.setGuid(guid);
-                            microdata.setSchema(prop.getProperty("db.dest.schema"));
-                            total++;
+                            boolean deleted = result.getInt(3) == 1;
 
-                            if ((checkConstraints || checkOnly) && !microdata.checkValueSets()) {
+                            //Get the microdata parsing CSPro plain text files according to its dictionary
+                            Questionnaire microdata = QuestionnaireReader.parse(dictionary, questionnaire, prop.getProperty("db.dest.schema"), guid, deleted);
+                            dictionaryInfo.incTotal();
+                            dictionaryInfo.setLastGuid(guid);
+
+                            if ((checkConstraints || checkOnly) && !microdata.isDeleted() && !microdata.checkValueSets()) {
                                 errors = true;
                                 chunkError = true;
                                 String msg = "Validation failed\n" + microdata.getCheckErrors();
-                                dictionaryQuery.writeError(idDictionary, msg, microdata, "");
+                                dictionaryQuery.writeError(dictionaryInfo, msg, microdata, "");
+                                dictionaryInfo.incErrors();
                             } else if (!checkOnly) {
                                 quests.add(microdata);
                             }
@@ -170,12 +172,8 @@ public class LoaderEngine {
                                 if (checkOnly) {
                                     System.out.print((chunkError) ? '-' : 'x');
                                 } else {
-                                    int completed = commitList(dictionary, quests, idDictionary, stmtDst, dictionaryQuery);
-                                    totalCompleted += completed;
-                                    dictionaryQuery.updateLoaded(idDictionary, totalCompleted, total, guid);
-                                    if (completed != quests.size()) {
-                                        chunkError = true;
-                                    }
+                                    chunkError |= commitList(dictionary, quests, idDictionary, stmtDst, dictionaryQuery, dictionaryInfo);
+                                    dictionaryQuery.updateLoaded(dictionaryInfo);
                                     if (chunkError) {
                                         System.out.print('-');
                                         errors = true;
@@ -193,7 +191,7 @@ public class LoaderEngine {
                         System.out.println();
 
                         if (!checkOnly) {
-                            dictionaryQuery.updateRevision(idDictionary, nextRevision);
+                            dictionaryQuery.updateRevision(dictionaryInfo);
                         }
 
                         stmtDst.executeQuery("SET foreign_key_checks=1");
@@ -205,9 +203,9 @@ public class LoaderEngine {
                     } else {
                         System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Data transfer completed!");
                     }
-                    System.out.println("Loaded " + totalCompleted + " of " + total + " questionnaires");
+                    dictionaryInfo.printShort(System.out);
 
-                    if (!dictionaryQuery.stop(idDictionary)) {
+                    if (!dictionaryQuery.stop(dictionaryInfo)) {
                         System.out.println("Impossible to set LOADER status to stop!");
                         errors = false;
                     }
@@ -219,30 +217,52 @@ public class LoaderEngine {
         return !errors;
     }
 
-    private static int commitList(Dictionary dictionary, List<Questionnaire> quests, int idDictionary,
-            Statement stmtDst, DictionaryQuery dictionaryQuery) throws SQLException {
-        int done = quests.size();
+    private static boolean commitList(Dictionary dictionary, List<Questionnaire> quests, int idDictionary,
+            Statement stmtDst, DictionaryQuery dictionaryQuery, DictionaryInfo dictionaryInfo) throws SQLException {
+        boolean error = false;
+        int deleted = 0;
+        int loaded = 0;
         try {
             for (Questionnaire q : quests) {
-                InsertWriter.create(q.getSchema(), dictionary, q, stmtDst);
+                if (q.isDeleted()) {
+                    DeleteWriter.create(q.getSchema(), dictionary, q, stmtDst);
+                    deleted++;
+                } else {
+                    InsertWriter.create(q.getSchema(), dictionary, q, stmtDst);
+                    loaded++;
+                }
             }
             stmtDst.getConnection().commit();
         } catch (Exception e1) {
             stmtDst.getConnection().rollback();
+            deleted = 0;
+            loaded = 0;
             for (Questionnaire q : quests) {
                 StringBuilder script = new StringBuilder();
                 try {
-                    InsertWriter.create(q.getSchema(), dictionary, q, stmtDst, script);
+                    if (q.isDeleted()) {
+                        DeleteWriter.create(q.getSchema(), dictionary, q, stmtDst);
+                    } else {
+                        InsertWriter.create(q.getSchema(), dictionary, q, stmtDst, script);
+                    }
                     stmtDst.getConnection().commit();
+                    if (q.isDeleted()) {
+                        deleted++;
+                    } else {
+                        loaded++;
+                    }
                 } catch (Exception e2) {
                     stmtDst.getConnection().rollback();
+                    error = true;
                     String msg = "Impossible to load questionnaire - " + e2.getMessage();
-                    dictionaryQuery.writeError(idDictionary, msg, q, script.toString());
-                    done--;
+                    dictionaryQuery.writeError(dictionaryInfo, msg, q, script.toString());
+                    dictionaryInfo.incErrors();
                 }
             }
         }
-        return done;
+        dictionaryInfo.incLoaded(loaded);
+        dictionaryInfo.incDeleted(deleted);
+        return error;
     }
 
 }

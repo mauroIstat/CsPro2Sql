@@ -43,7 +43,7 @@ import org.apache.commons.cli.ParseException;
  */
 public class Main {
 
-    private static final String VERSION = "0.8";
+    private static final String VERSION = "0.9";
 
     public static void main(String[] args) {
         //Get command line options
@@ -220,6 +220,7 @@ public class Main {
             if (errMessage != null) {
                 System.err.println(errMessage);
             }
+            System.out.println("CsPro2Sql - version " + VERSION + "\n");
             formatter.printHelp("\n\n"
                     + "CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r]\n"

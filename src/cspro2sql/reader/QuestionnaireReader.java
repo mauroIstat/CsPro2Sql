@@ -31,8 +31,8 @@ import java.util.List;
 public class QuestionnaireReader {
 
     //Parse a questionnaire (CSPro plain text file) according to its dictionary 
-    public static Questionnaire parse(Dictionary dictionary, String questionnaire) {
-        Questionnaire result = new Questionnaire(questionnaire);
+    public static Questionnaire parse(Dictionary dictionary, String questionnaire, String schema, byte[] guid, boolean deleted) {
+        Questionnaire result = new Questionnaire(questionnaire, schema, guid, deleted);
         String[] rows = questionnaire.split(Dictionary.DICT_NEWLINE_REGEXP);
         Record record = dictionary.getMainRecord();
         List<List<Answer>> valuesList = new LinkedList<>();

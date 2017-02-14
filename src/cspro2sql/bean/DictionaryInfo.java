@@ -19,7 +19,7 @@ import java.util.Arrays;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @version 0.9
  */
@@ -43,18 +43,23 @@ public class DictionaryInfo {
     private final String name;
     private final Status status;
     private final int revision;
-    private final int total;
-    private final int loaded;
-    private final byte[] lastGuid;
-    private final int nextRevision;
+    
+    private int total;
+    private int loaded;
+    private int deleted;
+    private int errors;
+    private byte[] lastGuid;
+    private int nextRevision;
 
-    public DictionaryInfo(int id, String name, int status, int revision, int total, int loaded, byte[] lastGuid, int nextRevision) {
+    public DictionaryInfo(int id, String name, int status, int revision, int total, int loaded, int deleted, int errors, byte[] lastGuid, int nextRevision) {
         this.id = id;
         this.name = name;
         this.status = (status == 1) ? Status.RUNNING : Status.STOP;
         this.revision = revision;
         this.total = total;
         this.loaded = loaded;
+        this.deleted = deleted;
+        this.errors = errors;
         this.lastGuid = (lastGuid == null ? null : Arrays.copyOf(lastGuid, lastGuid.length));
         this.nextRevision = nextRevision;
     }
@@ -83,16 +88,48 @@ public class DictionaryInfo {
         return loaded;
     }
 
+    public int getDeleted() {
+        return deleted;
+    }
+
+    public int getErrors() {
+        return errors;
+    }
+
     public byte[] getLastGuid() {
         return lastGuid == null ? null : Arrays.copyOf(lastGuid, lastGuid.length);
+    }
+
+    public void setLastGuid(byte[] lastGuid) {
+        this.lastGuid = lastGuid == null ? null : Arrays.copyOf(lastGuid, lastGuid.length);
     }
 
     public int getNextRevision() {
         return nextRevision;
     }
 
+    public void setNextRevision(int nextRevision) {
+        this.nextRevision = nextRevision;
+    }
+
     public boolean isRunning() {
         return status == Status.RUNNING;
+    }
+
+    public void incTotal() {
+        this.total++;
+    }
+
+    public void incErrors() {
+        this.errors++;
+    }
+
+    public void incLoaded(int loaded) {
+        this.loaded += loaded;
+    }
+
+    public void incDeleted(int deleted) {
+        this.deleted += deleted;
     }
 
     public void print(PrintStream out) {
@@ -102,8 +139,17 @@ public class DictionaryInfo {
         if (status == Status.RUNNING) {
             out.println("Load to revision: " + nextRevision);
             out.println("Loaded: " + loaded);
+            out.println("Deleted: " + deleted);
+            out.println("Errors: " + errors);
             out.println("Total: " + total);
         }
+    }
+
+    public void printShort(PrintStream out) {
+        out.println("Loaded: " + loaded);
+        out.println("Deleted: " + deleted);
+        out.println("Errors: " + errors);
+        out.println("Total: " + total);
     }
 
 }
