@@ -19,7 +19,7 @@ import java.util.Map;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @version 0.9
  */
@@ -30,6 +30,7 @@ public final class ValueSet {
     private String link;
     private int valueLength;
     private boolean notCreated = true;
+    private boolean singleCharKeys = true;
     private Map<String, String> values = new LinkedHashMap<>();
 
     public String getLabel() {
@@ -78,6 +79,9 @@ public final class ValueSet {
 
     public void addValue(String key, String value) {
         this.values.put(key, value);
+        if (key.trim().length() > 1) {
+            singleCharKeys = false;
+        }
     }
 
     public boolean isEmpty() {
@@ -96,6 +100,10 @@ public final class ValueSet {
         return this.values.size();
     }
 
+    public boolean isSingleCharKeys() {
+        return singleCharKeys;
+    }
+
     @Override
     public ValueSet clone() {
         ValueSet vs = new ValueSet();
@@ -105,6 +113,7 @@ public final class ValueSet {
         vs.valueLength = this.valueLength;
         vs.notCreated = this.notCreated;
         vs.values = this.values;
+        vs.singleCharKeys = this.singleCharKeys;
         return vs;
     }
 

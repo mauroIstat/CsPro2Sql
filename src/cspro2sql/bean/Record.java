@@ -21,7 +21,7 @@ import java.util.Objects;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @version 0.9
  */
@@ -118,12 +118,23 @@ public final class Record {
     }
 
     public void replaceItemWithSplit(Item item, List<Item> split) {
-        int i = items.indexOf(item);
-        for (Item it : split) {
-            items.add(i++, it);
-            it.setRecord(this);
+        if (item.isSubItem()) {
+            // TODO to test
+            List<Item> subItems = item.getParent().getSubItems();
+            int i = subItems.indexOf(item);
+            for (Item it : split) {
+                subItems.add(i++, it);
+                it.setRecord(this);
+            }
+            subItems.remove(i);
+        } else {
+            int i = items.indexOf(item);
+            for (Item it : split) {
+                items.add(i++, it);
+                it.setRecord(this);
+            }
+            items.remove(i);
         }
-        items.remove(i);
     }
 
     public Record getMainRecord() {

@@ -22,7 +22,7 @@ import java.util.Map;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @version 0.9
  */
@@ -163,7 +163,8 @@ public final class Dictionary {
 
     private void addValueSetToLastItems(ValueSet valueSet) {
         for (Item item : this.lastItems) {
-            if (ITEM_ALPHA.equals(item.getDataType())) {
+            // TODO verify with census bureau
+            if (ITEM_ALPHA.equals(item.getDataType()) && valueSet.isSingleCharKeys()) {
                 List<Item> splits = item.splitIntoColumns(valueSet);
                 this.lastRecord.replaceItemWithSplit(item, splits);
             } else {

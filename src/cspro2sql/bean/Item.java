@@ -20,7 +20,7 @@ import java.util.Objects;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @version 0.9
  */
@@ -37,11 +37,20 @@ public final class Item {
     private boolean subItem;
     private boolean zeroFill;
     private boolean decimalChar;
+    private Item parent;
     private final List<Item> subItems = new ArrayList<>();
     private final List<ValueSet> valueSets = new ArrayList<>();
 
     public void setRecord(Record record) {
         this.record = record;
+    }
+
+    public Item getParent() {
+        return parent;
+    }
+
+    private void setParent(Item parent) {
+        this.parent = parent;
     }
 
     public void setValueSetName(String valueSetName) {
@@ -134,6 +143,7 @@ public final class Item {
     public void addSubItem(Item subItem) {
         this.subItems.add(subItem);
         subItem.setRecord(record);
+        subItem.setParent(this);
     }
 
     public List<ValueSet> getValueSets() {
@@ -195,6 +205,8 @@ public final class Item {
     @Override
     public Item clone() {
         Item clone = new Item();
+        clone.record = this.record;
+        clone.parent = this.parent;
         clone.dataType = this.dataType;
         clone.decimal = this.decimal;
         clone.decimalChar = this.decimalChar;
