@@ -59,10 +59,15 @@ public class QuestionnaireReader {
     }
 
     private static void parseItem(Item item, String row, List<Answer> values) {
-        if (row.length() < item.getStart() - 1 + item.getLength()) {
+        if (row.length() < item.getStart()) {
             values.add(new Answer(item, null));
         } else {
-            String v = row.substring(item.getStart() - 1, item.getStart() - 1 + item.getLength());
+            String v;
+            if (row.length() < item.getStart() - 1 + item.getLength()) {
+                v = row.substring(item.getStart() - 1);
+            } else {
+                v = row.substring(item.getStart() - 1, item.getStart() - 1 + item.getLength());
+            }
             if (v.trim().isEmpty()) {
                 values.add(new Answer(item, null));
             } else {

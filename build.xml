@@ -30,10 +30,10 @@
     <target name="-post-jar">
         <echo message="Creating CsPro2Sql.zip"/>
         <zip destfile="CsPro2Sql.zip">
-            <zipfileset dir="dist" includes="CsPro2Sql.jar" prefix="lib" />
-            <zipfileset dir="lib" prefix="lib" />
-            <zipfileset dir="." includes="CsPro2Sql.sh" />
-            <zipfileset dir="." includes="CsPro2Sql.bat" />
+            <zipfileset dir="dist" includes="CsPro2Sql.jar" prefix="CsPro2Sql/lib" />
+            <zipfileset dir="lib" prefix="CsPro2Sql/lib" />
+            <zipfileset dir="." includes="CsPro2Sql.sh" prefix="CsPro2Sql" />
+            <zipfileset dir="." includes="CsPro2Sql.bat" prefix="CsPro2Sql" />
         </zip>
     </target>
     
