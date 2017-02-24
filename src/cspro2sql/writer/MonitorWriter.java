@@ -45,7 +45,6 @@ public class MonitorWriter {
 
         try {
             tm.printTemplate("c_user", out);
-            tm.printTemplate("c_user_roles", out);
             tm.printTemplate("cspro2sql_stats", out);
         } catch (IOException ex) {
             return false;

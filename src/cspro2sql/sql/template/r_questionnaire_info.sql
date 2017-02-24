@@ -1,9 +1,9 @@
 CREATE VIEW @SCHEMA.`r_questionnaire_info` AS
     SELECT 
         COUNT(0) AS `total`,
-        `avg_individual`.`avg_individual` AS `avg_individual`,
-        `avg_individual_male`.`avg_individual_male` AS `avg_individual_male`,
-        `avg_individual_female`.`avg_individual_female` AS `avg_individual_female`
+        ANY_VALUE(`avg_individual`.`avg_individual`) AS `avg_individual`,
+        ANY_VALUE(`avg_individual_male`.`avg_individual_male`) AS `avg_individual_male`,
+        ANY_VALUE(`avg_individual_female`.`avg_individual_female`) AS `avg_individual_female`
     FROM
         (((@SCHEMA.@QUESTIONNAIRE_TABLE
         JOIN (SELECT 

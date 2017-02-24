@@ -1,14 +1,14 @@
 CREATE VIEW @SCHEMA.`r_individual_info` AS
     SELECT 
-        `total`.`total` AS `total`,
-        `total`.`age_avg` AS `age_avg`,
-        `total`.`age_max` AS `age_max`,
-        `male`.`total_male` AS `total_male`,
-        `male`.`age_male_avg` AS `age_avg_male`,
-        `male`.`age_male_max` AS `age_max_male`,
-        `female`.`total_female` AS `total_female`,
-        `female`.`age_female_avg` AS `age_avg_female`,
-        `female`.`age_female_max` AS `age_max_female`
+        ANY_VALUE(`total`.`total`) AS `total`,
+        ANY_VALUE(`total`.`age_avg`) AS `age_avg`,
+        ANY_VALUE(`total`.`age_max`) AS `age_max`,
+        ANY_VALUE(`male`.`total_male`) AS `total_male`,
+        ANY_VALUE(`male`.`age_male_avg`) AS `age_avg_male`,
+        ANY_VALUE(`male`.`age_male_max`) AS `age_max_male`,
+        ANY_VALUE(`female`.`total_female`) AS `total_female`,
+        ANY_VALUE(`female`.`age_female_avg`) AS `age_avg_female`,
+        ANY_VALUE(`female`.`age_female_max`) AS `age_max_female`
     FROM
         ((((SELECT 
             COUNT(0) AS `total`,

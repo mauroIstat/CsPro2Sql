@@ -5,12 +5,13 @@ CREATE TABLE @SCHEMA.`c_user` (
   `LASTNAME` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `EMAIL` varchar(256) COLLATE utf8mb4_unicode_ci NOT NULL,
   `PASSWORD` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ROLE` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`ID`),
   UNIQUE KEY `EMAIL_UNIQUE` (`EMAIL`(255)),
   KEY `EMAIL_INDEX` (`EMAIL`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD)
-  VALUES ('Dashboard', 'Admin', 'admin@dashboard', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918');
-INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD)
-  VALUES ('Dashboard', 'Guest', 'guest@dashboard', '84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec');
+INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD, ROLE)
+  VALUES ('Dashboard', 'Admin', 'admin@dashboard.it', '$2a$10$Yq.aC1NrfpC/grRBlc8dU.QgWG4bMvj3goJayS4DwypWXcrrHe756', 'ADMIN');
+INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD, ROLE)
+  VALUES ('Dashboard', 'Guest', 'guest@dashboard.it', '$2a$10$Yq.aC1NrfpC/grRBlc8dU.QgWG4bMvj3goJayS4DwypWXcrrHe756', 'GUEST');
