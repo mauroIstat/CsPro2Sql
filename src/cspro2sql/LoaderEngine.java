@@ -10,6 +10,7 @@ import cspro2sql.writer.DeleteWriter;
 import cspro2sql.writer.InsertWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -43,7 +44,7 @@ import java.util.logging.Logger;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.1
  */
 public class LoaderEngine {
 
@@ -61,13 +62,13 @@ public class LoaderEngine {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
                     prop.getProperty("db.dest.table.prefix"));
-            execute(dictionary, prop, true, false, false, false, false);
+            execute(dictionary, prop, true, false, false, false, false, null);
         } catch (Exception ex) {
             System.exit(1);
         }
     }
 
-    static boolean execute(Dictionary dictionary, Properties prop, boolean allRecords, boolean checkConstraints, boolean checkOnly, boolean force, boolean recovery) {
+    static boolean execute(Dictionary dictionary, Properties prop, boolean allRecords, boolean checkConstraints, boolean checkOnly, boolean force, boolean recovery, PrintStream out) {
         boolean errors = false;
         SimpleDateFormat SDF = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
 
@@ -172,7 +173,7 @@ public class LoaderEngine {
                                 if (checkOnly) {
                                     System.out.print((chunkError) ? '-' : 'x');
                                 } else {
-                                    chunkError |= commitList(dictionary, quests, idDictionary, stmtDst, dictionaryQuery, dictionaryInfo);
+                                    chunkError |= commitList(dictionary, quests, stmtDst, dictionaryQuery, dictionaryInfo, out);
                                     dictionaryQuery.updateLoaded(dictionaryInfo);
                                     if (chunkError) {
                                         System.out.print('-');
@@ -217,20 +218,26 @@ public class LoaderEngine {
         return !errors;
     }
 
-    private static boolean commitList(Dictionary dictionary, List<Questionnaire> quests, int idDictionary,
-            Statement stmtDst, DictionaryQuery dictionaryQuery, DictionaryInfo dictionaryInfo) throws SQLException {
+    private static boolean commitList(Dictionary dictionary, List<Questionnaire> quests, Statement stmtDst,
+            DictionaryQuery dictionaryQuery, DictionaryInfo dictionaryInfo, PrintStream out) throws SQLException {
         boolean error = false;
         int deleted = 0;
         int loaded = 0;
         try {
+            StringBuilder script = out == null ? null : new StringBuilder();
             for (Questionnaire q : quests) {
                 if (q.isDeleted()) {
-                    DeleteWriter.create(q.getSchema(), dictionary, q, stmtDst);
+                    DeleteWriter.create(q.getSchema(), dictionary, q, stmtDst, script);
                     deleted++;
                 } else {
-                    InsertWriter.create(q.getSchema(), dictionary, q, stmtDst);
+                    InsertWriter.create(q.getSchema(), dictionary, q, stmtDst, script);
                     loaded++;
                 }
+            }
+            if (out != null) {
+                out.println();
+                out.println(script);
+                out.println();
             }
             stmtDst.getConnection().commit();
         } catch (Exception e1) {
@@ -241,7 +248,7 @@ public class LoaderEngine {
                 StringBuilder script = new StringBuilder();
                 try {
                     if (q.isDeleted()) {
-                        DeleteWriter.create(q.getSchema(), dictionary, q, stmtDst);
+                        DeleteWriter.create(q.getSchema(), dictionary, q, stmtDst, script);
                     } else {
                         InsertWriter.create(q.getSchema(), dictionary, q, stmtDst, script);
                     }

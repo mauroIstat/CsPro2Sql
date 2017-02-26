@@ -1,4 +1,4 @@
-CREATE VIEW @SCHEMA.`r_questionnaire_info` AS
+CREATE OR REPLACE VIEW @SCHEMA.`r_questionnaire_info` AS
     SELECT 
         COUNT(0) AS `total`,
         ANY_VALUE(`avg_individual`.`avg_individual`) AS `avg_individual`,

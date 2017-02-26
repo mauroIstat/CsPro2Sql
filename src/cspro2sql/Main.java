@@ -37,13 +37,13 @@ import org.apache.commons.cli.ParseException;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.1
  */
 public class Main {
 
-    private static final String VERSION = "0.9";
+    private static final String VERSION = "0.9.1";
 
     public static void main(String[] args) {
         //Get command line options
@@ -85,7 +85,7 @@ public class Main {
         if (opts.schemaEngine) {
             error = !SchemaEngine.execute(dictionary, opts.prop, opts.foreignKeys, opts.ps);
         } else if (opts.loaderEngine) {
-            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery);
+            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
         } else if (opts.monitorEngine) {
             error = !MonitorEngine.execute(dictionary, opts.prop, opts.ps);
         } else if (opts.updateEngine) {
@@ -93,7 +93,9 @@ public class Main {
         } else if (opts.statusEngine) {
             error = !StatusEngine.execute(opts.prop);
         }
-        opts.ps.close();
+        if (opts.ps != null) {
+            opts.ps.close();
+        }
 
         if (error) {
             System.exit(1);
@@ -136,30 +138,41 @@ public class Main {
 
             opts.propertiesFile = cmd.getOptionValue("p");
             String engine = cmd.getOptionValue("e");
-            if ("schema".equals(engine)) {
-                opts.schemaEngine = true;
-                opts.foreignKeys = cmd.hasOption("fk");
-                if (cmd.hasOption("o")) { //Output file name provided
-                    opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
-                }
-            } else if ("loader".equals(engine)) {
-                opts.loaderEngine = true;
-                opts.checkConstraints = cmd.hasOption("cc");
-                opts.checkOnly = cmd.hasOption("co");
-                opts.allRecords = cmd.hasOption("a");
-                opts.force = cmd.hasOption("f");
-                opts.recovery = cmd.hasOption("r");
-            } else if ("monitor".equals(engine)) {
-                opts.monitorEngine = true;
-                if (cmd.hasOption("o")) { //Output file name provided
-                    opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
-                }
-            } else if ("update".equals(engine)) {
-                opts.updateEngine = true;
-            } else if ("status".equals(engine)) {
-                opts.statusEngine = true;
-            } else {
-                opts.printHelp("Wrong engine type!");
+            switch (engine) {
+                case "schema":
+                    opts.schemaEngine = true;
+                    opts.foreignKeys = cmd.hasOption("fk");
+                    if (cmd.hasOption("o")) {
+                        opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
+                    } else {
+                        opts.ps = System.out;
+                    }   break;
+                case "loader":
+                    opts.loaderEngine = true;
+                    opts.checkConstraints = cmd.hasOption("cc");
+                    opts.checkOnly = cmd.hasOption("co");
+                    opts.allRecords = cmd.hasOption("a");
+                    opts.force = cmd.hasOption("f");
+                    opts.recovery = cmd.hasOption("r");
+                    if (cmd.hasOption("o")) {
+                        opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
+                    }   break;
+                case "monitor":
+                    opts.monitorEngine = true;
+                    if (cmd.hasOption("o")) {
+                        opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
+                    } else {
+                        opts.ps = System.out;
+                    }   break;
+                case "update":
+                    opts.updateEngine = true;
+                    break;
+                case "status":
+                    opts.statusEngine = true;
+                    break;
+                default:
+                    opts.printHelp("Wrong engine type!");
+                    break;
             }
         } catch (ParseException | FileNotFoundException | UnsupportedEncodingException e) {
             opts.printHelp();
@@ -203,7 +216,7 @@ public class Main {
         String schema;
         String tablePrefix;
         String propertiesFile;
-        PrintStream ps = System.out;
+        PrintStream ps = null;
         Properties prop;
         private final Options options;
 
@@ -223,7 +236,7 @@ public class Main {
             System.out.println("CsPro2Sql - version " + VERSION + "\n");
             formatter.printHelp("\n\n"
                     + "CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]\n"
-                    + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r]\n"
+                    + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e update  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e status  -p PROPERTIES_FILE\n"

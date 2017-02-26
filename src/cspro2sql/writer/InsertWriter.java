@@ -28,9 +28,9 @@ import java.util.Map;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.1
  */
 public class InsertWriter {
 
@@ -75,15 +75,6 @@ public class InsertWriter {
                 PreparedStatementManager.populateInsertPreparedStatement(record, id, i, values, schema, stmt.getConnection());
             }
 
-            /*
-            if (exists && !record.isMainRecord()) {
-                System.out.println("delete from " + schema + "." + record.getTableName() + " where " + record.getMainRecord().getName() + "=" + id + ";");
-            }
-            System.out.println(PreparedStatementManager.getSqlCode(record, id, e.getValue(), schema) + ";");
-            if (record.isMainRecord()) {
-                System.out.println("select last_insert_id();");
-            }
-             */
             if (exists && !record.isMainRecord()) {
                 if (script != null) {
                     script.append("delete from ").append(schema).append(".").append(record.getTableName()).append(" where ").append(record.getMainRecord().getName()).append("=").append(id).append(";\n");
@@ -96,7 +87,7 @@ public class InsertWriter {
             PreparedStatementManager.execute(record);
             if (record.isMainRecord()) {
                 if (script != null) {
-                    script.append("select last_insert_id();\n");
+                    script.append("-- select @ID := last_insert_id();\n");
                 }
                 try (ResultSet lastInsertId = stmt.executeQuery("select last_insert_id()")) {
                     lastInsertId.next();

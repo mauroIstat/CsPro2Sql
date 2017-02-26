@@ -1,4 +1,4 @@
-CREATE VIEW @SCHEMA.`r_sex_by_age` AS
+CREATE OR REPLACE VIEW @SCHEMA.`r_sex_by_age` AS
     SELECT 
         `a`.`p308` AS `age`,
         `a`.`total` AS `total`,

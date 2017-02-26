@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 /**
  * Copyright 2017 ISTAT
@@ -28,12 +29,14 @@ import java.util.Properties;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.1
  */
 public class TemplateManager {
-
+    
+    private static final Pattern PARAM_KEY = Pattern.compile("[\\s`.']@");
+    
     private final Map<String, String> params;
     private final String[] ea;
     private final String[] eaName;
@@ -50,7 +53,9 @@ public class TemplateManager {
         this.params.put("@QUESTIONNAIRE_TABLE", mainRecord.getTableName());
         this.params.put("@QUESTIONNAIRE_COLUMN_BASE", mainRecord.getName());
 
-        if (prop.containsKey("column.questionnaire.ea")) {
+        if (prop.containsKey("column.questionnaire.ea")
+                && prop.containsKey("column.questionnaire.ea.name")
+                && prop.containsKey("column.questionnaire.ea.description")) {
             this.ea = prop.getProperty("column.questionnaire.ea").split(",");
             this.eaName = Arrays.copyOf(prop.getProperty("column.questionnaire.ea.name").split(","), ea.length);
             this.eaDescription = Arrays.copyOf(prop.getProperty("column.questionnaire.ea.description").split(","), ea.length);
@@ -77,14 +82,30 @@ public class TemplateManager {
             this.ageRange = null;
         }
 
-        this.params.put("@INDIVIDUAL_TABLE", mainRecord.getTablePrefix() + prop.getProperty("table.individual"));
-        this.params.put("@INDIVIDUAL_COLUMN_SEX", prop.getProperty("column.individual.sex"));
-        this.params.put("@INDIVIDUAL_COLUMN_AGE", prop.getProperty("column.individual.age"));
-        this.params.put("@INDIVIDUAL_COLUMN_RELIGION", prop.getProperty("column.individual.religion"));
-        this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", prop.getProperty("column.individual.sex.value.male"));
-        this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", prop.getProperty("column.individual.sex.value.female"));
-        this.params.put("@VALUESET_SEX", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.sex"));
-        this.params.put("@VALUESET_RELIGION", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.religion"));
+        if (prop.containsKey("table.individual")) {
+            this.params.put("@INDIVIDUAL_TABLE", mainRecord.getTablePrefix() + prop.getProperty("table.individual"));
+        }
+        if (prop.containsKey("column.individual.sex")) {
+            this.params.put("@INDIVIDUAL_COLUMN_SEX", prop.getProperty("column.individual.sex"));
+        }
+        if (prop.containsKey("column.individual.age")) {
+            this.params.put("@INDIVIDUAL_COLUMN_AGE", prop.getProperty("column.individual.age"));
+        }
+        if (prop.containsKey("column.individual.religion")) {
+            this.params.put("@INDIVIDUAL_COLUMN_RELIGION", prop.getProperty("column.individual.religion"));
+        }
+        if (prop.containsKey("column.individual.sex.value.male")) {
+            this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", prop.getProperty("column.individual.sex.value.male"));
+        }
+        if (prop.containsKey("column.individual.sex.value.female")) {
+            this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", prop.getProperty("column.individual.sex.value.female"));
+        }
+        if (prop.containsKey("column.individual.sex")) {
+            this.params.put("@VALUESET_SEX", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.sex"));
+        }
+        if (prop.containsKey("column.individual.religion")) {
+            this.params.put("@VALUESET_RELIGION", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.religion"));
+        }
     }
 
     public String getParam(String key) {
@@ -107,19 +128,26 @@ public class TemplateManager {
         return ageRange;
     }
 
-    public void printTemplate(String template, PrintStream ps) throws IOException {
+    public boolean printTemplate(String template, PrintStream ps) throws IOException {
         try (InputStream in = TemplateManager.class.getResourceAsStream("/cspro2sql/sql/template/" + template + ".sql")) {
             try (InputStreamReader isr = new InputStreamReader(in, "UTF-8")) {
                 try (BufferedReader br = new BufferedReader(isr)) {
                     String line;
+                    StringBuilder output = new StringBuilder();
                     while ((line = br.readLine()) != null) {
                         for (Map.Entry<String, String> e : this.params.entrySet()) {
                             if (e.getValue() != null) {
                                 line = line.replace(e.getKey(), e.getValue());
                             }
                         }
-                        ps.println(line);
+                        output.append(line).append("\n");
                     }
+                    line = output.toString();
+                    if (PARAM_KEY.matcher(line).find()) {
+                        return false;
+                    }
+                    ps.print(line);
+                    return true;
                 }
             }
         }

@@ -1,4 +1,4 @@
-CREATE VIEW @SCHEMA.`r_sex_by_region` AS
+CREATE OR REPLACE VIEW @SCHEMA.`r_sex_by_region` AS
     SELECT 
         `region`.`VALUE` AS `REGION`,
         `sex`.`VALUE` AS `SEX`,

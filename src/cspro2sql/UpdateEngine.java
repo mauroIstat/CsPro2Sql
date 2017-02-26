@@ -29,7 +29,7 @@ import java.util.Properties;
  *
  * @author Guido Drovandi <drovandi @ istat.it> 
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.1
  */
 public class UpdateEngine {
 
@@ -64,7 +64,7 @@ public class UpdateEngine {
 
                 try (Statement readDst = connDst.createStatement()) {
                     try (Statement writeDst = connDst.createStatement()) {
-                        try (ResultSet rs = readDst.executeQuery("SELECT * FROM " + schema + ".cspro2sql_stats")) {
+                        try (ResultSet rs = readDst.executeQuery("SELECT * FROM " + schema + ".cspro2sql_report")) {
                             while (rs.next()) {
                                 String template = rs.getString(1);
                                 System.out.print("Updating " + template + "... ");

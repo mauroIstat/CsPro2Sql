@@ -1,4 +1,4 @@
-CREATE TABLE @SCHEMA.`c_user` (
+CREATE TABLE IF NOT EXISTS @SCHEMA.`c_user` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `FIRSTNAME` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `MIDDLENAME` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -15,3 +15,4 @@ INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD, ROLE)
   VALUES ('Dashboard', 'Admin', 'admin@dashboard.it', '$2a$10$Yq.aC1NrfpC/grRBlc8dU.QgWG4bMvj3goJayS4DwypWXcrrHe756', 'ADMIN');
 INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD, ROLE)
   VALUES ('Dashboard', 'Guest', 'guest@dashboard.it', '$2a$10$Yq.aC1NrfpC/grRBlc8dU.QgWG4bMvj3goJayS4DwypWXcrrHe756', 'GUEST');
+

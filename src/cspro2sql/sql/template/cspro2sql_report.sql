@@ -1,4 +1,4 @@
-CREATE TABLE @SCHEMA.`cspro2sql_stats` (
+CREATE TABLE IF NOT EXISTS @SCHEMA.`cspro2sql_report` (
   `NAME` varchar(256) NOT NULL,
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

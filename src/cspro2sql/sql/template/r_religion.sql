@@ -1,4 +1,4 @@
-CREATE VIEW @SCHEMA.`r_religion` AS
+CREATE OR REPLACE VIEW @SCHEMA.`r_religion` AS
     SELECT 
         `vs`.`VALUE` AS `RELIGION`, COUNT(0) AS `INDIVIDUALS`
     FROM
