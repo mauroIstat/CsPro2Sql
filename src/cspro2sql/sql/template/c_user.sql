@@ -3,11 +3,11 @@ CREATE TABLE IF NOT EXISTS @SCHEMA.`c_user` (
   `FIRSTNAME` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `MIDDLENAME` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `LASTNAME` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `EMAIL` varchar(256) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `EMAIL` varchar(190) COLLATE utf8mb4_unicode_ci NOT NULL,
   `PASSWORD` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ROLE` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`ID`),
-  UNIQUE KEY `EMAIL_UNIQUE` (`EMAIL`(255)),
+  UNIQUE KEY `EMAIL_UNIQUE` (`EMAIL`),
   KEY `EMAIL_INDEX` (`EMAIL`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

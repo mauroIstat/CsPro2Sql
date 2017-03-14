@@ -27,9 +27,9 @@ import java.io.StringReader;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.1
  */
 public class DictionaryReader {
 
@@ -42,22 +42,7 @@ public class DictionaryReader {
                         : DictionaryReader.class.getResourceAsStream("/" + fileName))) {
             try (InputStreamReader fr = new InputStreamReader(in, "UTF-8")) {
                 try (BufferedReader br = new BufferedReader(fr)) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        switch (line) {
-                            case Dictionary.DICT_LEVEL:
-                            case Dictionary.DICT_RECORD:
-                                dictionary.addRecord(BeanFactory.createRecord(br, tablePrefix));
-                                break;
-                            case Dictionary.DICT_ITEM:
-                                dictionary.addItem(BeanFactory.createItem(br));
-                                break;
-                            case Dictionary.DICT_VALUESET:
-                                dictionary.addValueSet(BeanFactory.createValueSet(br));
-                                break;
-                            default:
-                        }
-                    }
+                    read(dictionary, tablePrefix, br);
                 }
             }
         }
@@ -68,25 +53,29 @@ public class DictionaryReader {
         Dictionary dictionary = new Dictionary();
         try (Reader reader = new StringReader(dictionaryString)) {
             try (BufferedReader br = new BufferedReader(reader)) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    switch (line) {
-                        case Dictionary.DICT_LEVEL:
-                        case Dictionary.DICT_RECORD:
-                            dictionary.addRecord(BeanFactory.createRecord(br, tablePrefix));
-                            break;
-                        case Dictionary.DICT_ITEM:
-                            dictionary.addItem(BeanFactory.createItem(br));
-                            break;
-                        case Dictionary.DICT_VALUESET:
-                            dictionary.addValueSet(BeanFactory.createValueSet(br));
-                            break;
-                        default:
-                    }
-                }
+                read(dictionary, tablePrefix, br);
             }
         }
         return dictionary;
+    }
+
+    private static void read(Dictionary dictionary, String tablePrefix, BufferedReader br) throws IOException {
+        String line;
+        while ((line = br.readLine()) != null) {
+            switch (line) {
+                case Dictionary.DICT_LEVEL:
+                case Dictionary.DICT_RECORD:
+                    dictionary.addRecord(BeanFactory.createRecord(br, tablePrefix));
+                    break;
+                case Dictionary.DICT_ITEM:
+                    dictionary.addItem(BeanFactory.createItem(br));
+                    break;
+                case Dictionary.DICT_VALUESET:
+                    dictionary.addValueSet(BeanFactory.createValueSet(br));
+                    break;
+                default:
+            }
+        }
     }
 
 }

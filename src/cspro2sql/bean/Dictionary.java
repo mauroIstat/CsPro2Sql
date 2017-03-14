@@ -24,7 +24,7 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.1
  */
 public final class Dictionary {
 
@@ -168,6 +168,9 @@ public final class Dictionary {
                 List<Item> splits = item.splitIntoColumns(valueSet);
                 this.lastRecord.replaceItemWithSplit(item, splits);
             } else {
+                if (!ITEM_ALPHA.equals(item.getDataType())) {
+                    valueSet.removeEmptyValues();
+                }
                 item.addValueSet(valueSet);
             }
         }

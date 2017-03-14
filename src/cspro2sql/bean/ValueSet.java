@@ -1,5 +1,6 @@
 package cspro2sql.bean;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -21,7 +22,7 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.1
  */
 public final class ValueSet {
 
@@ -102,6 +103,16 @@ public final class ValueSet {
 
     public boolean isSingleCharKeys() {
         return singleCharKeys;
+    }
+
+    public void removeEmptyValues() {
+        Iterator<Map.Entry<String, String>> it = this.values.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, String> entry = it.next();
+            if (entry.getKey().trim().isEmpty()) {
+                it.remove();
+            }
+        }
     }
 
     @Override
