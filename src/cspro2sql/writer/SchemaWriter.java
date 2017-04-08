@@ -4,6 +4,7 @@ import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.ValueSet;
+import cspro2sql.sql.SqlUtility;
 import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -28,9 +29,9 @@ import java.util.Set;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.2
  */
 public class SchemaWriter {
 
@@ -125,7 +126,7 @@ public class SchemaWriter {
                     if (!first) {
                         ps.println(",");
                     }
-                    ps.print("    (\"" + e.getKey() + "\",\"" + e.getValue() + "\")");
+                    ps.print("    (\"" + SqlUtility.removeQuotes(e.getKey()) + "\",\"" + SqlUtility.removeQuotes(e.getValue()) + "\")");
                     keys.add(e.getKey());
                     first = false;
                 }
