@@ -46,7 +46,7 @@ public class UpdateEngine {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
                     prop.getProperty("db.dest.table.prefix"),
-                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split("[,]"))));
+                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split(" *[,] *"))));
             execute(dictionary, prop);
         } catch (Exception ex) {
             System.exit(1);

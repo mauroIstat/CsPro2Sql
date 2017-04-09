@@ -201,7 +201,7 @@ public class Main {
             opts.printHelp("The database schema is mandatory!\nPlease set 'db.dest.schema' into the properties file");
         }
         opts.tablePrefix = prop.getProperty("db.dest.table.prefix", "");
-        opts.multipleAnswers = new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split("[,]")));
+        opts.multipleAnswers = new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split(" *[,] *")));
 
         return opts;
     }
