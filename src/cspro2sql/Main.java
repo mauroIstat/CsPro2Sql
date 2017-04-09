@@ -43,7 +43,7 @@ import org.apache.commons.cli.ParseException;
  */
 public class Main {
 
-    private static final String VERSION = "0.9.1";
+    private static final String VERSION = "0.9.4";
 
     public static void main(String[] args) {
         //Get command line options

@@ -24,9 +24,9 @@ import java.util.List;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.4
  */
 public class QuestionnaireReader {
 
@@ -71,27 +71,7 @@ public class QuestionnaireReader {
             if (v.trim().isEmpty()) {
                 values.add(new Answer(item, null));
             } else {
-                switch (item.getDataType()) {
-                    case Dictionary.ITEM_DECIMAL:
-                        if (item.getDecimal() > 0 && !item.hasDecimalChar()) {
-                            String head = v.substring(0, v.length() - item.getDecimal()).trim();
-                            if (head.isEmpty()) {
-                                head = "0";
-                            }
-                            String tail = v.substring(v.length() - item.getDecimal()).trim();
-                            if (tail.isEmpty()) {
-                                tail = "0";
-                            }
-                            values.add(new Answer(item, head + "." + tail));
-                        } else {
-                            values.add(new Answer(item, v));
-                        }
-                        break;
-                    case Dictionary.ITEM_ALPHA:
-                        values.add(new Answer(item, v));
-                        break;
-                    default:
-                }
+                values.add(new Answer(item, item.parseValue(v)));
             }
         }
         for (Item subItem : item.getSubItems()) {

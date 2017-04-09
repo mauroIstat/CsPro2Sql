@@ -4,7 +4,6 @@ import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.ValueSet;
-import cspro2sql.sql.SqlUtility;
 import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -31,7 +30,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.2
+ * @version 0.9.4
  */
 public class SchemaWriter {
 
@@ -85,7 +84,11 @@ public class SchemaWriter {
                 ps.println("    " + name + " CHAR(" + length + "),");
                 break;
             case Dictionary.ITEM_DECIMAL:
-                ps.println("    " + name + " INT(" + length + "),");
+                if (item.getDecimal() > 0) {
+                    ps.println("    " + name + " DECIMAL(" + length + ", " + item.getDecimal() + "),");
+                } else {
+                    ps.println("    " + name + " DECIMAL(" + length + ", 0),");
+                }
                 break;
             default:
         }
@@ -126,7 +129,7 @@ public class SchemaWriter {
                     if (!first) {
                         ps.println(",");
                     }
-                    ps.print("    (\"" + SqlUtility.removeQuotes(e.getKey()) + "\",\"" + SqlUtility.removeQuotes(e.getValue()) + "\")");
+                    ps.print("    (\"" + e.getKey() + "\",\"" + e.getValue() + "\")");
                     keys.add(e.getKey());
                     first = false;
                 }

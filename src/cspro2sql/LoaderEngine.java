@@ -44,7 +44,7 @@ import java.util.logging.Logger;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.1
+ * @version 0.9.4
  */
 public class LoaderEngine {
 
@@ -62,7 +62,7 @@ public class LoaderEngine {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
                     prop.getProperty("db.dest.table.prefix"));
-            execute(dictionary, prop, true, false, false, false, false, null);
+            execute(dictionary, prop, true, true, false, true, false, null);
         } catch (Exception ex) {
             System.exit(1);
         }

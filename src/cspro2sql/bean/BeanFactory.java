@@ -21,7 +21,7 @@ import java.io.IOException;
  *
  * @author Guido Drovandi <drovandi @ istat.it> 
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.4
  */
 public final class BeanFactory {
 
@@ -102,7 +102,7 @@ public final class BeanFactory {
 
     private static boolean addValueSetValues(ValueSet valueSet, String s) {
         String[] ss = getValue(s).split(";");
-        if (ss[0].matches("^'.*'$")) {
+        if (ss[0].matches("^[\"'].*[\"']$")) {
             ss[0] = ss[0].substring(1, ss[0].length() - 1);
         }
         ss[0] = ss[0].trim();

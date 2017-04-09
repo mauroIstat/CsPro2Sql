@@ -16,9 +16,9 @@ package cspro2sql.bean;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.4
  */
 public class Answer {
 
@@ -47,7 +47,9 @@ public class Answer {
         try {
             String v = value;
             if (Dictionary.ITEM_DECIMAL.equals(item.getDataType())) {
-                v = "" + Integer.parseInt(v);
+                if (!v.trim().matches("^[-+]?[0-9]*[.]?[0-9]*$")) {
+                    throw new Exception("Not valid number: " + v);
+                }
             }
             if (item.hasValueSets()) {
                 boolean found = false;
