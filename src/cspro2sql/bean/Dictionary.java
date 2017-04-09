@@ -24,7 +24,7 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.1
+ * @version 0.9.5
  */
 public final class Dictionary {
 
@@ -163,8 +163,7 @@ public final class Dictionary {
 
     private void addValueSetToLastItems(ValueSet valueSet) {
         for (Item item : this.lastItems) {
-            // TODO verify with census bureau
-            if (ITEM_ALPHA.equals(item.getDataType()) && valueSet.isSingleCharKeys()) {
+            if (ITEM_ALPHA.equals(item.getDataType()) && item.isMultipleAnswer()) {
                 List<Item> splits = item.splitIntoColumns(valueSet);
                 this.lastRecord.replaceItemWithSplit(item, splits);
             } else {

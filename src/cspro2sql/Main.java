@@ -13,7 +13,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -39,11 +42,11 @@ import org.apache.commons.cli.ParseException;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.1
+ * @version 0.9.5
  */
 public class Main {
 
-    private static final String VERSION = "0.9.4";
+    private static final String VERSION = "0.9.5";
 
     public static void main(String[] args) {
         //Get command line options
@@ -54,7 +57,7 @@ public class Main {
         Dictionary dictionary = null;
         if (opts.dictFile != null && !opts.dictFile.isEmpty()) {
             try {
-                dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix);
+                dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix, opts.multipleAnswers);
             } catch (IOException ex) {
                 opts.ps.close();
                 opts.printHelp("Impossible to read dictionary file (" + ex.getMessage() + ")");
@@ -72,7 +75,7 @@ public class Main {
                     try (Statement stmt = connSrc.createStatement()) {
                         try (ResultSet r = stmt.executeQuery("select dictionary_full_content from " + srcSchema + ".cspro_dictionaries where dictionary_name = '" + srcDataTable + "'")) {
                             r.next();
-                            dictionary = DictionaryReader.readFromString(r.getString(1), opts.tablePrefix);
+                            dictionary = DictionaryReader.readFromString(r.getString(1), opts.tablePrefix, opts.multipleAnswers);
                         }
                     }
                 }
@@ -146,7 +149,8 @@ public class Main {
                         opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
                     } else {
                         opts.ps = System.out;
-                    }   break;
+                    }
+                    break;
                 case "loader":
                     opts.loaderEngine = true;
                     opts.checkConstraints = cmd.hasOption("cc");
@@ -156,14 +160,16 @@ public class Main {
                     opts.recovery = cmd.hasOption("r");
                     if (cmd.hasOption("o")) {
                         opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
-                    }   break;
+                    }
+                    break;
                 case "monitor":
                     opts.monitorEngine = true;
                     if (cmd.hasOption("o")) {
                         opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
                     } else {
                         opts.ps = System.out;
-                    }   break;
+                    }
+                    break;
                 case "update":
                     opts.updateEngine = true;
                     break;
@@ -195,6 +201,7 @@ public class Main {
             opts.printHelp("The database schema is mandatory!\nPlease set 'db.dest.schema' into the properties file");
         }
         opts.tablePrefix = prop.getProperty("db.dest.table.prefix", "");
+        opts.multipleAnswers = new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split("[,]")));
 
         return opts;
     }
@@ -216,6 +223,7 @@ public class Main {
         String schema;
         String tablePrefix;
         String propertiesFile;
+        Set<String> multipleAnswers;
         PrintStream ps = null;
         Properties prop;
         private final Options options;

@@ -7,6 +7,8 @@ import cspro2sql.writer.MonitorWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
 
 /**
@@ -25,9 +27,9 @@ import java.util.Properties;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.5
  */
 public class MonitorEngine {
 
@@ -41,7 +43,8 @@ public class MonitorEngine {
         try {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
-                    prop.getProperty("db.dest.table.prefix"));
+                    prop.getProperty("db.dest.table.prefix"),
+                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split("[,]"))));
             execute(dictionary, prop, System.out);
         } catch (Exception ex) {
             System.exit(1);

@@ -6,6 +6,8 @@ import cspro2sql.writer.SchemaWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,7 +30,7 @@ import java.util.logging.Logger;
  *
  * @author Guido Drovandi <drovandi @ istat.it> 
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.5
  */
 public class SchemaEngine {
 
@@ -49,7 +51,8 @@ public class SchemaEngine {
         try {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
-                    prop.getProperty("db.dest.table.prefix"));
+                    prop.getProperty("db.dest.table.prefix"),
+                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split("[,]"))));
             execute(dictionary, prop, false, System.out);
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Impossible to create the database schema", ex);

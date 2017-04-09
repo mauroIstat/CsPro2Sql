@@ -22,16 +22,16 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.1
+ * @version 0.9.5
  */
 public final class ValueSet {
 
     private String label;
     private String name;
     private String link;
+    private int keyLength;
     private int valueLength;
     private boolean notCreated = true;
-    private boolean singleCharKeys = true;
     private Map<String, String> values = new LinkedHashMap<>();
 
     public String getLabel() {
@@ -81,7 +81,7 @@ public final class ValueSet {
     public void addValue(String key, String value) {
         this.values.put(key, value);
         if (key.trim().length() > 1) {
-            singleCharKeys = false;
+            keyLength = Math.max(keyLength, key.trim().length());
         }
     }
 
@@ -101,8 +101,8 @@ public final class ValueSet {
         return this.values.size();
     }
 
-    public boolean isSingleCharKeys() {
-        return singleCharKeys;
+    public int getKeyLength() {
+        return keyLength;
     }
 
     public void removeEmptyValues() {
@@ -121,10 +121,10 @@ public final class ValueSet {
         vs.label = this.label;
         vs.name = this.name;
         vs.link = this.link;
+        vs.keyLength = this.keyLength;
         vs.valueLength = this.valueLength;
         vs.notCreated = this.notCreated;
         vs.values = this.values;
-        vs.singleCharKeys = this.singleCharKeys;
         return vs;
     }
 

@@ -2,6 +2,7 @@ package cspro2sql.bean;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * Copyright 2017 ISTAT
@@ -21,7 +22,7 @@ import java.io.IOException;
  *
  * @author Guido Drovandi <drovandi @ istat.it> 
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.4
+ * @version 0.9.5
  */
 public final class BeanFactory {
 
@@ -46,7 +47,7 @@ public final class BeanFactory {
         return record;
     }
 
-    public static Item createItem(BufferedReader br) throws IOException {
+    public static Item createItem(BufferedReader br, Set<String> multipleAnswers) throws IOException {
         String line;
         Item item = new Item();
         while ((line = br.readLine()) != null) {
@@ -71,6 +72,9 @@ public final class BeanFactory {
             } else if (line.isEmpty()) {
                 break;
             }
+        }
+        if (multipleAnswers.contains(item.getName())) {
+            item.setMultipleAnswer(true);
         }
         return item;
     }

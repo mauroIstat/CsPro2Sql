@@ -18,7 +18,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -44,7 +46,7 @@ import java.util.logging.Logger;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.4
+ * @version 0.9.5
  */
 public class LoaderEngine {
 
@@ -61,7 +63,8 @@ public class LoaderEngine {
         try {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
-                    prop.getProperty("db.dest.table.prefix"));
+                    prop.getProperty("db.dest.table.prefix"),
+                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split("[,]"))));
             execute(dictionary, prop, true, true, false, true, false, null);
         } catch (Exception ex) {
             System.exit(1);

@@ -9,6 +9,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
 
 /**
@@ -29,7 +31,7 @@ import java.util.Properties;
  *
  * @author Guido Drovandi <drovandi @ istat.it> 
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.1
+ * @version 0.9.5
  */
 public class UpdateEngine {
 
@@ -43,7 +45,8 @@ public class UpdateEngine {
         try {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
-                    prop.getProperty("db.dest.table.prefix"));
+                    prop.getProperty("db.dest.table.prefix"),
+                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split("[,]"))));
             execute(dictionary, prop);
         } catch (Exception ex) {
             System.exit(1);

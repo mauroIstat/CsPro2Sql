@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Set;
 
 /**
  * Copyright 2017 ISTAT
@@ -29,11 +30,11 @@ import java.io.StringReader;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.1
+ * @version 0.9.5
  */
 public class DictionaryReader {
 
-    public static Dictionary read(String fileName, String tablePrefix) throws IOException {
+    public static Dictionary read(String fileName, String tablePrefix, Set<String> multipleAnswers) throws IOException {
         Dictionary dictionary = new Dictionary();
         boolean isLocalFile = new File(fileName).exists();
         try (InputStream in
@@ -42,24 +43,24 @@ public class DictionaryReader {
                         : DictionaryReader.class.getResourceAsStream("/" + fileName))) {
             try (InputStreamReader fr = new InputStreamReader(in, "UTF-8")) {
                 try (BufferedReader br = new BufferedReader(fr)) {
-                    read(dictionary, tablePrefix, br);
+                    read(dictionary, tablePrefix, multipleAnswers, br);
                 }
             }
         }
         return dictionary;
     }
 
-    public static Dictionary readFromString(String dictionaryString, String tablePrefix) throws IOException {
+    public static Dictionary readFromString(String dictionaryString, String tablePrefix, Set<String> multipleAnswers) throws IOException {
         Dictionary dictionary = new Dictionary();
         try (Reader reader = new StringReader(dictionaryString)) {
             try (BufferedReader br = new BufferedReader(reader)) {
-                read(dictionary, tablePrefix, br);
+                read(dictionary, tablePrefix, multipleAnswers, br);
             }
         }
         return dictionary;
     }
 
-    private static void read(Dictionary dictionary, String tablePrefix, BufferedReader br) throws IOException {
+    private static void read(Dictionary dictionary, String tablePrefix, Set<String> multipleAnswers, BufferedReader br) throws IOException {
         String line;
         while ((line = br.readLine()) != null) {
             switch (line) {
@@ -68,7 +69,7 @@ public class DictionaryReader {
                     dictionary.addRecord(BeanFactory.createRecord(br, tablePrefix));
                     break;
                 case Dictionary.DICT_ITEM:
-                    dictionary.addItem(BeanFactory.createItem(br));
+                    dictionary.addItem(BeanFactory.createItem(br, multipleAnswers));
                     break;
                 case Dictionary.DICT_VALUESET:
                     dictionary.addValueSet(BeanFactory.createValueSet(br));
