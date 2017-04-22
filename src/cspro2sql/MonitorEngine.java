@@ -29,7 +29,7 @@ import java.util.Properties;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.5
+ * @version 0.9.6
  */
 public class MonitorEngine {
 
@@ -44,7 +44,8 @@ public class MonitorEngine {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
                     prop.getProperty("db.dest.table.prefix"),
-                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split(" *[,] *"))));
+                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split(" *[,] *"))),
+                    new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *"))));
             execute(dictionary, prop, System.out);
         } catch (Exception ex) {
             System.exit(1);

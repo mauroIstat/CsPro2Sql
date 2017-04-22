@@ -22,7 +22,7 @@ import java.util.Objects;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.5
+ * @version 0.9.6
  */
 public final class Item {
 
@@ -193,14 +193,20 @@ public final class Item {
     public String parseValue(String v) {
         if (Dictionary.ITEM_DECIMAL.equals(getDataType()) && getDecimal() > 0 && !hasDecimalChar()) {
             String head = v.substring(0, v.length() - getDecimal()).trim();
+            String tail = v.substring(v.length() - getDecimal()).trim();
+            if ((head + tail).matches("^[*]*$")) {
+                return null;
+            }
             if (head.isEmpty()) {
                 head = "0";
             }
-            String tail = v.substring(v.length() - getDecimal()).trim();
             if (tail.isEmpty()) {
                 tail = "0";
             }
             return head + "." + tail;
+        }
+        if (Dictionary.ITEM_DECIMAL.equals(getDataType()) && v.matches("^[*.]+$")) {
+            return null;
         }
         return v;
     }

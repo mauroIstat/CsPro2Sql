@@ -42,11 +42,11 @@ import org.apache.commons.cli.ParseException;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.5
+ * @version 0.9.6
  */
 public class Main {
 
-    private static final String VERSION = "0.9.5";
+    private static final String VERSION = "0.9.6";
 
     public static void main(String[] args) {
         //Get command line options
@@ -57,7 +57,7 @@ public class Main {
         Dictionary dictionary = null;
         if (opts.dictFile != null && !opts.dictFile.isEmpty()) {
             try {
-                dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix, opts.multipleAnswers);
+                dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix, opts.multipleAnswers, opts.ignoreItems);
             } catch (IOException ex) {
                 opts.ps.close();
                 opts.printHelp("Impossible to read dictionary file (" + ex.getMessage() + ")");
@@ -75,13 +75,13 @@ public class Main {
                     try (Statement stmt = connSrc.createStatement()) {
                         try (ResultSet r = stmt.executeQuery("select dictionary_full_content from " + srcSchema + ".cspro_dictionaries where dictionary_name = '" + srcDataTable + "'")) {
                             r.next();
-                            dictionary = DictionaryReader.readFromString(r.getString(1), opts.tablePrefix, opts.multipleAnswers);
+                            dictionary = DictionaryReader.readFromString(r.getString(1), opts.tablePrefix, opts.multipleAnswers, opts.ignoreItems);
                         }
                     }
                 }
             } catch (ClassNotFoundException | SQLException | IOException | InstantiationException | IllegalAccessException ex) {
                 opts.ps.close();
-                System.err.println("Impossibile to read dictionary from database (" + ex.getMessage() + ")");
+                System.err.println("Impossible to read dictionary from database (" + ex.getMessage() + ")");
             }
         }
 
@@ -202,6 +202,7 @@ public class Main {
         }
         opts.tablePrefix = prop.getProperty("db.dest.table.prefix", "");
         opts.multipleAnswers = new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split(" *[,] *")));
+        opts.ignoreItems = new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *")));
 
         return opts;
     }
@@ -224,6 +225,7 @@ public class Main {
         String tablePrefix;
         String propertiesFile;
         Set<String> multipleAnswers;
+        Set<String> ignoreItems;
         PrintStream ps = null;
         Properties prop;
         private final Options options;

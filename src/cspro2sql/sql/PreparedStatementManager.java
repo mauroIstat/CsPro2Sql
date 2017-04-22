@@ -28,9 +28,9 @@ import java.util.Map;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.6
  */
 public class PreparedStatementManager {
 
@@ -59,7 +59,7 @@ public class PreparedStatementManager {
                     } else if (v.contains(".")) {
                         insertPS.setDouble(field++, Double.parseDouble(v.trim()));
                     } else {
-                        insertPS.setInt(field++, Integer.parseInt(v.trim()));
+                        insertPS.setLong(field++, Long.parseLong(v.trim()));
                     }
                     break;
                 case Dictionary.ITEM_ALPHA:
@@ -113,7 +113,7 @@ public class PreparedStatementManager {
         try {
             return conn.prepareStatement(sql);
         } catch (SQLException ex) {
-            System.out.println("Impossibile to create prepared statement (" + ex.getMessage() + ")");
+            System.out.println("Impossible to create prepared statement (" + ex.getMessage() + ")");
             System.exit(1);
         }
         return null;

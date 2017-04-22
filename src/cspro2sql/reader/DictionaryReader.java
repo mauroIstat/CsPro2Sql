@@ -2,6 +2,8 @@ package cspro2sql.reader;
 
 import cspro2sql.bean.BeanFactory;
 import cspro2sql.bean.Dictionary;
+import cspro2sql.bean.Item;
+import cspro2sql.bean.ValueSet;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,11 +32,11 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.5
+ * @version 0.9.6
  */
 public class DictionaryReader {
 
-    public static Dictionary read(String fileName, String tablePrefix, Set<String> multipleAnswers) throws IOException {
+    public static Dictionary read(String fileName, String tablePrefix, Set<String> multipleAnswers, Set<String> ignoreItems) throws IOException {
         Dictionary dictionary = new Dictionary();
         boolean isLocalFile = new File(fileName).exists();
         try (InputStream in
@@ -43,36 +45,47 @@ public class DictionaryReader {
                         : DictionaryReader.class.getResourceAsStream("/" + fileName))) {
             try (InputStreamReader fr = new InputStreamReader(in, "UTF-8")) {
                 try (BufferedReader br = new BufferedReader(fr)) {
-                    read(dictionary, tablePrefix, multipleAnswers, br);
+                    read(dictionary, tablePrefix, multipleAnswers, ignoreItems, br);
                 }
             }
         }
         return dictionary;
     }
 
-    public static Dictionary readFromString(String dictionaryString, String tablePrefix, Set<String> multipleAnswers) throws IOException {
+    public static Dictionary readFromString(String dictionaryString, String tablePrefix, Set<String> multipleAnswers, Set<String> ignoreItems) throws IOException {
         Dictionary dictionary = new Dictionary();
         try (Reader reader = new StringReader(dictionaryString)) {
             try (BufferedReader br = new BufferedReader(reader)) {
-                read(dictionary, tablePrefix, multipleAnswers, br);
+                read(dictionary, tablePrefix, multipleAnswers, ignoreItems, br);
             }
         }
         return dictionary;
     }
 
-    private static void read(Dictionary dictionary, String tablePrefix, Set<String> multipleAnswers, BufferedReader br) throws IOException {
+    private static void read(Dictionary dictionary, String tablePrefix, Set<String> multipleAnswers, Set<String> ignoreItems, BufferedReader br) throws IOException {
         String line;
+        boolean skipValueSet = false;
         while ((line = br.readLine()) != null) {
             switch (line) {
                 case Dictionary.DICT_LEVEL:
                 case Dictionary.DICT_RECORD:
                     dictionary.addRecord(BeanFactory.createRecord(br, tablePrefix));
+                    skipValueSet = false;
                     break;
                 case Dictionary.DICT_ITEM:
-                    dictionary.addItem(BeanFactory.createItem(br, multipleAnswers));
+                    Item item = BeanFactory.createItem(br, multipleAnswers);
+                    if (ignoreItems.contains(item.getName())) {
+                        skipValueSet = true;
+                    } else {
+                        dictionary.addItem(item);
+                        skipValueSet = false;
+                    }
                     break;
                 case Dictionary.DICT_VALUESET:
-                    dictionary.addValueSet(BeanFactory.createValueSet(br));
+                    ValueSet vs = BeanFactory.createValueSet(br);
+                    if (!skipValueSet) {
+                        dictionary.addValueSet(vs);
+                    }
                     break;
                 default:
             }
