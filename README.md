@@ -25,7 +25,7 @@ CsPro2Sql is simple to install: all you need is to download and unzip the `CsPro
 CsPro2Sql is composed of several engines (run `CsPro2Sql` to get usage info):
 ```
 CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]
-CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r]
+CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE]
 CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]
 CsPro2Sql -e update  -p PROPERTIES_FILE
 CsPro2Sql -e status  -p PROPERTIES_FILE
@@ -72,6 +72,11 @@ In order to run CsPro2Sql engines it is necessary to configure a properties file
 Within this configuration CsPro2Sql reads the CsPro-Dictionary from CsPro 7.0 database. It is also possible to specify a CsPro-Dictionary file:
 
 * `dictionary.filename`: the path to the CsPro-Dictionary file
+
+Optional properties are:
+
+* `multiple.answers`: list of items to be considered as a multiple answer (comma separated)
+* `ignore.items`: list of items to be ignored (comma separated)
 
 *Note: the source CsPro 7.0 database and the microdata MySQL could be the same*
 
