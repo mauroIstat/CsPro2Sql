@@ -47,7 +47,7 @@ public final class BeanFactory {
         return record;
     }
 
-    public static Item createItem(BufferedReader br, Set<String> multipleAnswers) throws IOException {
+    public static Item createItem(BufferedReader br, Set<String> multipleResponse) throws IOException {
         String line;
         Item item = new Item();
         while ((line = br.readLine()) != null) {
@@ -73,7 +73,7 @@ public final class BeanFactory {
                 break;
             }
         }
-        if (multipleAnswers.contains(item.getName())) {
+        if (multipleResponse.contains(item.getName())) {
             item.setMultipleAnswer(true);
         }
         return item;

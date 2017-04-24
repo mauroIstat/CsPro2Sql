@@ -36,7 +36,7 @@ import java.util.Set;
  */
 public class DictionaryReader {
 
-    public static Dictionary read(String fileName, String tablePrefix, Set<String> multipleAnswers, Set<String> ignoreItems) throws IOException {
+    public static Dictionary read(String fileName, String tablePrefix, Set<String> multipleResponse, Set<String> ignoreItems) throws IOException {
         Dictionary dictionary = new Dictionary();
         boolean isLocalFile = new File(fileName).exists();
         try (InputStream in
@@ -45,24 +45,24 @@ public class DictionaryReader {
                         : DictionaryReader.class.getResourceAsStream("/" + fileName))) {
             try (InputStreamReader fr = new InputStreamReader(in, "UTF-8")) {
                 try (BufferedReader br = new BufferedReader(fr)) {
-                    read(dictionary, tablePrefix, multipleAnswers, ignoreItems, br);
+                    read(dictionary, tablePrefix, multipleResponse, ignoreItems, br);
                 }
             }
         }
         return dictionary;
     }
 
-    public static Dictionary readFromString(String dictionaryString, String tablePrefix, Set<String> multipleAnswers, Set<String> ignoreItems) throws IOException {
+    public static Dictionary readFromString(String dictionaryString, String tablePrefix, Set<String> multipleResponse, Set<String> ignoreItems) throws IOException {
         Dictionary dictionary = new Dictionary();
         try (Reader reader = new StringReader(dictionaryString)) {
             try (BufferedReader br = new BufferedReader(reader)) {
-                read(dictionary, tablePrefix, multipleAnswers, ignoreItems, br);
+                read(dictionary, tablePrefix, multipleResponse, ignoreItems, br);
             }
         }
         return dictionary;
     }
 
-    private static void read(Dictionary dictionary, String tablePrefix, Set<String> multipleAnswers, Set<String> ignoreItems, BufferedReader br) throws IOException {
+    private static void read(Dictionary dictionary, String tablePrefix, Set<String> multipleResponse, Set<String> ignoreItems, BufferedReader br) throws IOException {
         String line;
         boolean skipValueSet = false;
         while ((line = br.readLine()) != null) {
@@ -73,7 +73,7 @@ public class DictionaryReader {
                     skipValueSet = false;
                     break;
                 case Dictionary.DICT_ITEM:
-                    Item item = BeanFactory.createItem(br, multipleAnswers);
+                    Item item = BeanFactory.createItem(br, multipleResponse);
                     if (ignoreItems.contains(item.getName())) {
                         skipValueSet = true;
                     } else {

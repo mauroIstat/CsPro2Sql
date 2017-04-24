@@ -52,7 +52,7 @@ public class SchemaEngine {
             Dictionary dictionary = DictionaryReader.read(
                     prop.getProperty("dictionary.filename"),
                     prop.getProperty("db.dest.table.prefix"),
-                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split(" *[,] *"))),
+                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.response", "").split(" *[,] *"))),
                     new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *"))));
             execute(dictionary, prop, false, System.out);
         } catch (Exception ex) {

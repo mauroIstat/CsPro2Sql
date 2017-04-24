@@ -75,7 +75,7 @@ Within this configuration CsPro2Sql reads the CsPro-Dictionary from CsPro 7.0 da
 
 Optional properties are:
 
-* `multiple.answers`: list of items to be considered as a multiple answer (comma separated)
+* `multiple.response`: list of items to be considered as a multiple answer (comma separated)
 * `ignore.items`: list of items to be ignored (comma separated)
 
 *Note: the source CsPro 7.0 database and the microdata MySQL could be the same*

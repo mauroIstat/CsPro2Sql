@@ -57,7 +57,7 @@ public class Main {
         Dictionary dictionary = null;
         if (opts.dictFile != null && !opts.dictFile.isEmpty()) {
             try {
-                dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix, opts.multipleAnswers, opts.ignoreItems);
+                dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix, opts.multipleResponse, opts.ignoreItems);
             } catch (IOException ex) {
                 opts.ps.close();
                 opts.printHelp("Impossible to read dictionary file (" + ex.getMessage() + ")");
@@ -75,7 +75,7 @@ public class Main {
                     try (Statement stmt = connSrc.createStatement()) {
                         try (ResultSet r = stmt.executeQuery("select dictionary_full_content from " + srcSchema + ".cspro_dictionaries where dictionary_name = '" + srcDataTable + "'")) {
                             r.next();
-                            dictionary = DictionaryReader.readFromString(r.getString(1), opts.tablePrefix, opts.multipleAnswers, opts.ignoreItems);
+                            dictionary = DictionaryReader.readFromString(r.getString(1), opts.tablePrefix, opts.multipleResponse, opts.ignoreItems);
                         }
                     }
                 }
@@ -201,7 +201,7 @@ public class Main {
             opts.printHelp("The database schema is mandatory!\nPlease set 'db.dest.schema' into the properties file");
         }
         opts.tablePrefix = prop.getProperty("db.dest.table.prefix", "");
-        opts.multipleAnswers = new HashSet<>(Arrays.asList(prop.getProperty("multiple.answers", "").split(" *[,] *")));
+        opts.multipleResponse = new HashSet<>(Arrays.asList(prop.getProperty("multiple.response", "").split(" *[,] *")));
         opts.ignoreItems = new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *")));
 
         return opts;
@@ -224,7 +224,7 @@ public class Main {
         String schema;
         String tablePrefix;
         String propertiesFile;
-        Set<String> multipleAnswers;
+        Set<String> multipleResponse;
         Set<String> ignoreItems;
         PrintStream ps = null;
         Properties prop;
