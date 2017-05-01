@@ -23,9 +23,9 @@ import java.util.Objects;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.7
  */
-public final class Record {
+public final class Record extends Taggable {
 
     private final String tablePrefix;
     private final String valueSetPrefix;

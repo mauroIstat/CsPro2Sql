@@ -3,6 +3,8 @@ package cspro2sql.reader;
 import cspro2sql.bean.BeanFactory;
 import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
+import cspro2sql.bean.Record;
+import cspro2sql.bean.Tag;
 import cspro2sql.bean.ValueSet;
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,7 +34,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.6
+ * @version 0.9.7
  */
 public class DictionaryReader {
 
@@ -49,6 +51,7 @@ public class DictionaryReader {
                 }
             }
         }
+        createTagsCatalog(dictionary);
         return dictionary;
     }
 
@@ -59,6 +62,7 @@ public class DictionaryReader {
                 read(dictionary, tablePrefix, multipleResponse, ignoreItems, br);
             }
         }
+        createTagsCatalog(dictionary);
         return dictionary;
     }
 
@@ -89,6 +93,39 @@ public class DictionaryReader {
                     break;
                 default:
             }
+        }
+    }
+
+    private static void createTagsCatalog(Dictionary dictionary) {
+        for (Record record : dictionary.getRecords()) {
+            createTagsCatalog(dictionary, record);
+        }
+    }
+
+    private static void createTagsCatalog(Dictionary dictionary, Record record) {
+        for (Tag tag : record.getTags()) {
+            dictionary.addTagged(tag, record);
+        }
+        for (Item item : record.getItems()) {
+            createTagsCatalog(dictionary, item);
+        }
+    }
+
+    private static void createTagsCatalog(Dictionary dictionary, Item item) {
+        for (Tag tag : item.getTags()) {
+            dictionary.addTagged(tag, item);
+        }
+        for (ValueSet vs : item.getValueSets()) {
+            createTagsCatalog(dictionary, vs);
+        }
+        for (Item subItem : item.getSubItems()) {
+            createTagsCatalog(dictionary, subItem);
+        }
+    }
+
+    private static void createTagsCatalog(Dictionary dictionary, ValueSet vs) {
+        for (Tag tag : vs.getTags()) {
+            dictionary.addTagged(tag, vs);
         }
     }
 

@@ -24,7 +24,7 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.5
+ * @version 0.9.7
  */
 public final class Dictionary {
 
@@ -87,15 +87,28 @@ public final class Dictionary {
     public static final String RELATION_SECONDARY = "Secondary";
     public static final String RELATION_SECONDARYLINK = "SecondaryLink";
 
+    public static final Tag TAG_MULTIPLE = new Tag("#multiple");
+    public static final Tag TAG_IGNORE = new Tag("#ignore");
+    public static final Tag TAG_INDIVIDUAL = new Tag("#individual");
+    public static final Tag TAG_SEX = new Tag("#sex");
+    public static final Tag TAG_RELIGION = new Tag("#religion");
+    public static final Tag TAG_AGE = new Tag("#age");
+    public static final Tag TAG_MALE = new Tag("#male");
+    public static final Tag TAG_FEMALE = new Tag("#female");
+
     private final List<Record> records = new LinkedList<>();
     private final Map<String, Record> recordsByName = new LinkedHashMap<>();
     private final Map<String, ValueSet> valueSets = new HashMap<>();
+    private final Map<Tag, List<Taggable>> tags = new HashMap<>();
 
     private Record lastRecord;
     private List<Item> lastItems;
     private List<Item> lastItemsNotSubItem;
 
     public void addRecord(Record record) {
+        if (record.hasTag(TAG_IGNORE)) {
+            return;
+        }
         if (this.records.isEmpty()) {
             // idItems record
             record.setIsMainRecord(true);
@@ -108,6 +121,9 @@ public final class Dictionary {
     }
 
     public void addItem(Item item) {
+        if (item.hasTag(TAG_IGNORE)) {
+            return;
+        }
         if (item.getOccurrences() > 1) {
             List<Item> its = new LinkedList<>();
             for (int i = 0; i < item.getOccurrences(); i++) {
@@ -163,7 +179,7 @@ public final class Dictionary {
 
     private void addValueSetToLastItems(ValueSet valueSet) {
         for (Item item : this.lastItems) {
-            if (ITEM_ALPHA.equals(item.getDataType()) && item.isMultipleAnswer()) {
+            if (ITEM_ALPHA.equals(item.getDataType()) && item.hasTag(TAG_MULTIPLE)) {
                 List<Item> splits = item.splitIntoColumns(valueSet);
                 this.lastRecord.replaceItemWithSplit(item, splits);
             } else {
@@ -212,6 +228,42 @@ public final class Dictionary {
 
     public Record getRecord(String name) {
         return recordsByName.get(name);
+    }
+
+    public void addTagged(Tag tag, Taggable o) {
+        if (!tags.containsKey(tag)) {
+            tags.put(tag, new LinkedList<Taggable>());
+        }
+        tags.get(tag).add(o);
+    }
+
+    public boolean hasTagged(Tag tag) {
+        return tags.containsKey(tag);
+    }
+
+    public Record getTaggedRecord(Tag tag) {
+        return (Record) tags.get(tag).get(0);
+    }
+
+    public Item getTaggedItem(Tag tag) {
+        return (Item) tags.get(tag).get(0);
+    }
+
+    public Iterable<Item> getTaggedItems(Tag tag) {
+        return (Iterable<Item>) (Object) tags.get(tag);
+    }
+
+    public ValueSet getTaggedValueSet(Tag tag) {
+        return (ValueSet) tags.get(tag).get(0);
+    }
+
+    public Tag getTag(Tag tag) {
+        for (Tag t : tags.keySet()) {
+            if (t.equals(tag)) {
+                return t;
+            }
+        }
+        return null;
     }
 
 }

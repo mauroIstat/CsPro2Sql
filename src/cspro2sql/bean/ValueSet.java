@@ -22,9 +22,9 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.5
+ * @version 0.9.7
  */
-public final class ValueSet {
+public final class ValueSet extends Taggable {
 
     private String label;
     private String name;

@@ -22,9 +22,9 @@ import java.util.Objects;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.6
+ * @version 0.9.7
  */
-public final class Item {
+public final class Item extends Taggable {
 
     private Record record;
     private String name;
@@ -37,7 +37,6 @@ public final class Item {
     private boolean subItem;
     private boolean zeroFill;
     private boolean decimalChar;
-    private boolean multipleAnswer;
     private Item parent;
     private final List<Item> subItems = new ArrayList<>();
     private final List<ValueSet> valueSets = new ArrayList<>();
@@ -137,14 +136,6 @@ public final class Item {
         this.decimalChar = decimalChar;
     }
 
-    public boolean isMultipleAnswer() {
-        return multipleAnswer;
-    }
-
-    public void setMultipleAnswer(boolean multipleAnswer) {
-        this.multipleAnswer = multipleAnswer;
-    }
-
     public List<Item> getSubItems() {
         return subItems;
     }
@@ -241,7 +232,6 @@ public final class Item {
         clone.dataType = this.dataType;
         clone.decimal = this.decimal;
         clone.decimalChar = this.decimalChar;
-        clone.multipleAnswer = this.multipleAnswer;
         clone.length = this.length;
         clone.name = this.name;
         clone.occurrences = this.occurrences;

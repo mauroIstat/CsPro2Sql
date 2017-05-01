@@ -2,6 +2,7 @@ package cspro2sql.sql;
 
 import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Record;
+import cspro2sql.bean.Tag;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,12 +32,12 @@ import java.util.regex.Pattern;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.1
+ * @version 0.9.7
  */
 public class TemplateManager {
-    
+
     private static final Pattern PARAM_KEY = Pattern.compile("[\\s`.']@");
-    
+
     private final Map<String, String> params;
     private final String[] ea;
     private final String[] eaName;
@@ -72,7 +73,18 @@ public class TemplateManager {
             this.eaDescription = null;
         }
 
-        if (prop.containsKey("range.individual.age")) {
+        if (dictionary.hasTagged(Dictionary.TAG_AGE)) {
+            Tag tag = dictionary.getTag(Dictionary.TAG_AGE);
+            if (tag.getValue() != null) {
+                String[] ageRangeS = tag.getValue().split(",");
+                this.ageRange = new int[ageRangeS.length];
+                for (int i = 0; i < ageRangeS.length; i++) {
+                    ageRange[i] = Integer.parseInt(ageRangeS[i]);
+                }
+            } else {
+                this.ageRange = null;
+            }
+        } else if (prop.containsKey("range.individual.age")) {
             String[] ageRangeS = prop.getProperty("range.individual.age").split(",");
             this.ageRange = new int[ageRangeS.length];
             for (int i = 0; i < ageRangeS.length; i++) {
@@ -82,29 +94,41 @@ public class TemplateManager {
             this.ageRange = null;
         }
 
-        if (prop.containsKey("table.individual")) {
+        if (dictionary.hasTagged(Dictionary.TAG_INDIVIDUAL)) {
+            this.params.put("@INDIVIDUAL_TABLE", mainRecord.getTablePrefix() + dictionary.getTaggedRecord(Dictionary.TAG_INDIVIDUAL).getName());
+        } else if (prop.containsKey("table.individual")) {
             this.params.put("@INDIVIDUAL_TABLE", mainRecord.getTablePrefix() + prop.getProperty("table.individual"));
         }
-        if (prop.containsKey("column.individual.sex")) {
+        if (dictionary.hasTagged(Dictionary.TAG_SEX)) {
+            String itemName = dictionary.getTaggedItem(Dictionary.TAG_SEX).getName();
+            this.params.put("@INDIVIDUAL_COLUMN_SEX", itemName);
+            this.params.put("@VALUESET_SEX", mainRecord.getValueSetPrefix() + itemName);
+        } else if (prop.containsKey("column.individual.sex")) {
             this.params.put("@INDIVIDUAL_COLUMN_SEX", prop.getProperty("column.individual.sex"));
-        }
-        if (prop.containsKey("column.individual.age")) {
-            this.params.put("@INDIVIDUAL_COLUMN_AGE", prop.getProperty("column.individual.age"));
-        }
-        if (prop.containsKey("column.individual.religion")) {
-            this.params.put("@INDIVIDUAL_COLUMN_RELIGION", prop.getProperty("column.individual.religion"));
-        }
-        if (prop.containsKey("column.individual.sex.value.male")) {
-            this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", prop.getProperty("column.individual.sex.value.male"));
-        }
-        if (prop.containsKey("column.individual.sex.value.female")) {
-            this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", prop.getProperty("column.individual.sex.value.female"));
-        }
-        if (prop.containsKey("column.individual.sex")) {
             this.params.put("@VALUESET_SEX", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.sex"));
         }
-        if (prop.containsKey("column.individual.religion")) {
+        if (dictionary.hasTagged(Dictionary.TAG_AGE)) {
+            this.params.put("@INDIVIDUAL_COLUMN_AGE", dictionary.getTaggedItem(Dictionary.TAG_AGE).getName());
+        } else if (prop.containsKey("column.individual.age")) {
+            this.params.put("@INDIVIDUAL_COLUMN_AGE", prop.getProperty("column.individual.age"));
+        }
+        if (dictionary.hasTagged(Dictionary.TAG_RELIGION)) {
+            String itemName = dictionary.getTaggedItem(Dictionary.TAG_RELIGION).getName();
+            this.params.put("@INDIVIDUAL_COLUMN_RELIGION", itemName);
+            this.params.put("@VALUESET_RELIGION", mainRecord.getValueSetPrefix() + itemName);
+        } else if (prop.containsKey("column.individual.religion")) {
+            this.params.put("@INDIVIDUAL_COLUMN_RELIGION", prop.getProperty("column.individual.religion"));
             this.params.put("@VALUESET_RELIGION", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.religion"));
+        }
+        if (dictionary.hasTagged(Dictionary.TAG_MALE)) {
+            this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", dictionary.getTaggedItem(Dictionary.TAG_MALE).getName());
+        } else if (prop.containsKey("column.individual.sex.value.male")) {
+            this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", prop.getProperty("column.individual.sex.value.male"));
+        }
+        if (dictionary.hasTagged(Dictionary.TAG_FEMALE)) {
+            this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", dictionary.getTaggedItem(Dictionary.TAG_MALE).getName());
+        } else if (prop.containsKey("column.individual.sex.value.female")) {
+            this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", prop.getProperty("column.individual.sex.value.female"));
         }
     }
 

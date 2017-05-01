@@ -42,11 +42,11 @@ import org.apache.commons.cli.ParseException;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.6
+ * @version 0.9.7
  */
 public class Main {
 
-    private static final String VERSION = "0.9.6";
+    private static final String VERSION = "0.9.7";
 
     public static void main(String[] args) {
         //Get command line options

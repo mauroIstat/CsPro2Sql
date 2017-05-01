@@ -3,6 +3,8 @@ package cspro2sql.bean;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Copyright 2017 ISTAT
@@ -20,11 +22,14 @@ import java.util.Set;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.5
+ * @version 0.9.7
  */
 public final class BeanFactory {
+
+    private static final Pattern TAGS = Pattern.compile("(#[^\\s#]+(\\[[.*\\[\\#\\]]+\\])?)");
+    private static final Pattern TAG_VALUE = Pattern.compile("^(#.*)\\[(.+)\\]$");
 
     public static Record createRecord(BufferedReader br, String tablePrefix) throws IOException {
         String line;
@@ -40,6 +45,8 @@ public final class BeanFactory {
                 record.setMax(Integer.parseInt(getValue(line)));
             } else if (line.startsWith(Dictionary.RECORD_LEN)) {
                 record.setLength(Integer.parseInt(getValue(line)));
+            } else if (line.startsWith(Dictionary.DICT_NOTE)) {
+                parseNote(record, getValue(line));
             } else if (line.isEmpty()) {
                 break;
             }
@@ -69,12 +76,14 @@ public final class BeanFactory {
                 item.setDecimalChar("Yes".equals(getValue(line)));
             } else if (line.startsWith(Dictionary.ITEM_DECIMAL)) {
                 item.setDecimal(Integer.parseInt(getValue(line)));
+            } else if (line.startsWith(Dictionary.DICT_NOTE)) {
+                parseNote(item, getValue(line));
             } else if (line.isEmpty()) {
                 break;
             }
         }
         if (multipleResponse.contains(item.getName())) {
-            item.setMultipleAnswer(true);
+            item.addTag(Dictionary.TAG_MULTIPLE);
         }
         return item;
     }
@@ -93,6 +102,8 @@ public final class BeanFactory {
                 if (!addValueSetValues(valueSet, line)) {
                     return null;
                 }
+            } else if (line.startsWith(Dictionary.DICT_NOTE)) {
+                parseNote(valueSet, getValue(line));
             } else if (line.isEmpty()) {
                 break;
             }
@@ -136,6 +147,23 @@ public final class BeanFactory {
         }
         valueSet.setValueLength(Math.max(valueSet.getValueLength(), ss[1].length()));
         return true;
+    }
+
+    private static void parseNote(Taggable obj, String note) {
+        Matcher matcher = TAGS.matcher(note);
+        while (matcher.find()) {
+            for (int i = 1; i <= matcher.groupCount(); i++) {
+                String name = matcher.group(i);
+                if (name != null) {
+                    Matcher valueMatcher = TAG_VALUE.matcher(name);
+                    if (valueMatcher.find()) {
+                        obj.addTag(new Tag(valueMatcher.group(1), valueMatcher.group(2)));
+                    } else {
+                        obj.addTag(new Tag(name));
+                    }
+                }
+            }
+        }
     }
 
 }
