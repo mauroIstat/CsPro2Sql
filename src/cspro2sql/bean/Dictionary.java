@@ -24,7 +24,7 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.7
+ * @version 0.9.8
  */
 public final class Dictionary {
 
@@ -87,7 +87,7 @@ public final class Dictionary {
     public static final String RELATION_SECONDARY = "Secondary";
     public static final String RELATION_SECONDARYLINK = "SecondaryLink";
 
-    public static final Tag TAG_MULTIPLE = new Tag("#multiple");
+    public static final Tag TAG_MULTIPLE_RESPONSE = new Tag("#multipleResponse");
     public static final Tag TAG_IGNORE = new Tag("#ignore");
     public static final Tag TAG_INDIVIDUAL = new Tag("#individual");
     public static final Tag TAG_SEX = new Tag("#sex");
@@ -179,7 +179,7 @@ public final class Dictionary {
 
     private void addValueSetToLastItems(ValueSet valueSet) {
         for (Item item : this.lastItems) {
-            if (ITEM_ALPHA.equals(item.getDataType()) && item.hasTag(TAG_MULTIPLE)) {
+            if (ITEM_ALPHA.equals(item.getDataType()) && item.hasTag(TAG_MULTIPLE_RESPONSE)) {
                 List<Item> splits = item.splitIntoColumns(valueSet);
                 this.lastRecord.replaceItemWithSplit(item, splits);
             } else {
@@ -255,6 +255,10 @@ public final class Dictionary {
 
     public ValueSet getTaggedValueSet(Tag tag) {
         return (ValueSet) tags.get(tag).get(0);
+    }
+
+    public ValueSetValue getTaggedValueSetValue(Tag tag) {
+        return (ValueSetValue) tags.get(tag).get(0);
     }
 
     public Tag getTag(Tag tag) {

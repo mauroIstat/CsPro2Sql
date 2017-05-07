@@ -4,6 +4,7 @@ import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.ValueSet;
+import cspro2sql.bean.ValueSetValue;
 import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -30,7 +31,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.4
+ * @version 0.9.8
  */
 public class SchemaWriter {
 
@@ -122,7 +123,7 @@ public class SchemaWriter {
             for (int i = 0; i < item.getValueSets().size(); i++) {
                 ValueSet valueSet = item.getValueSets().get(i);
                 valueSet.setCreated();
-                for (Map.Entry<String, String> e : valueSet.getValues().entrySet()) {
+                for (ValueSetValue e : valueSet.getValues().values()) {
                     if (keys.contains(e.getKey())) {
                         continue;
                     }

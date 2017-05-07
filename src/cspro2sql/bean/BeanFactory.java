@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.7
+ * @version 0.9.8
  */
 public final class BeanFactory {
 
@@ -83,7 +83,7 @@ public final class BeanFactory {
             }
         }
         if (multipleResponse.contains(item.getName())) {
-            item.addTag(Dictionary.TAG_MULTIPLE);
+            item.addTag(Dictionary.TAG_MULTIPLE_RESPONSE);
         }
         return item;
     }
@@ -91,6 +91,7 @@ public final class BeanFactory {
     public static ValueSet createValueSet(BufferedReader br) throws IOException {
         String line;
         ValueSet valueSet = new ValueSet();
+        ValueSetValue value = null;
         while ((line = br.readLine()) != null) {
             if (line.startsWith(Dictionary.DICT_LABEL)) {
                 valueSet.setLabel(getValue(line));
@@ -99,11 +100,12 @@ public final class BeanFactory {
             } else if (line.startsWith(Dictionary.VALUE_LINK)) {
                 valueSet.setLink(getValue(line));
             } else if (line.startsWith(Dictionary.VALUE_VALUE)) {
-                if (!addValueSetValues(valueSet, line)) {
+                value = addValueSetValues(valueSet, line);
+                if (value == null) {
                     return null;
                 }
             } else if (line.startsWith(Dictionary.DICT_NOTE)) {
-                parseNote(valueSet, getValue(line));
+                parseNote((value == null ? valueSet : value), getValue(line));
             } else if (line.isEmpty()) {
                 break;
             }
@@ -115,7 +117,8 @@ public final class BeanFactory {
         return s.split("=")[1];
     }
 
-    private static boolean addValueSetValues(ValueSet valueSet, String s) {
+    private static ValueSetValue addValueSetValues(ValueSet valueSet, String s) {
+        ValueSetValue value = null;
         String[] ss = getValue(s).split(";");
         if (ss[0].matches("^[\"'].*[\"']$")) {
             ss[0] = ss[0].substring(1, ss[0].length() - 1);
@@ -131,22 +134,24 @@ public final class BeanFactory {
                 int a = Integer.parseInt(ss[0].split(":")[0]);
                 int b = Integer.parseInt(ss[0].split(":")[1]);
                 for (; a <= b; a++) {
-                    valueSet.addValue("" + a, ss[1]);
+                    value = new ValueSetValue("" + a, ss[1]);
+                    valueSet.addValue("" + a, value);
                     if (valueSet.size() > 1000) {
-                        return false;
+                        return null;
                     }
                 }
             } catch (NumberFormatException ex) {
-                return false;
+                return null;
             }
         } else {
-            valueSet.addValue(ss[0], ss[1]);
+            value = new ValueSetValue(ss[0], ss[1]);
+            valueSet.addValue(ss[0], value);
             if (valueSet.size() > 1000) {
-                return false;
+                return null;
             }
         }
         valueSet.setValueLength(Math.max(valueSet.getValueLength(), ss[1].length()));
-        return true;
+        return value;
     }
 
     private static void parseNote(Taggable obj, String note) {

@@ -6,6 +6,7 @@ import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.Tag;
 import cspro2sql.bean.ValueSet;
+import cspro2sql.bean.ValueSetValue;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,7 +35,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.7
+ * @version 0.9.8
  */
 public class DictionaryReader {
 
@@ -126,6 +127,11 @@ public class DictionaryReader {
     private static void createTagsCatalog(Dictionary dictionary, ValueSet vs) {
         for (Tag tag : vs.getTags()) {
             dictionary.addTagged(tag, vs);
+        }
+        for (ValueSetValue value : vs.getValues().values()) {
+            for (Tag tag : value.getTags()) {
+                dictionary.addTagged(tag, value);
+            }
         }
     }
 

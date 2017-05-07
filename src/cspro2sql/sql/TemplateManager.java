@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.7
+ * @version 0.9.8
  */
 public class TemplateManager {
 
@@ -121,12 +121,12 @@ public class TemplateManager {
             this.params.put("@VALUESET_RELIGION", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.religion"));
         }
         if (dictionary.hasTagged(Dictionary.TAG_MALE)) {
-            this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", dictionary.getTaggedItem(Dictionary.TAG_MALE).getName());
+            this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", dictionary.getTaggedValueSetValue(Dictionary.TAG_MALE).getKey());
         } else if (prop.containsKey("column.individual.sex.value.male")) {
             this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", prop.getProperty("column.individual.sex.value.male"));
         }
         if (dictionary.hasTagged(Dictionary.TAG_FEMALE)) {
-            this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", dictionary.getTaggedItem(Dictionary.TAG_MALE).getName());
+            this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", dictionary.getTaggedValueSetValue(Dictionary.TAG_FEMALE).getKey());
         } else if (prop.containsKey("column.individual.sex.value.female")) {
             this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", prop.getProperty("column.individual.sex.value.female"));
         }

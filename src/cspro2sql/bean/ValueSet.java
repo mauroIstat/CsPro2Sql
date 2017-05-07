@@ -22,7 +22,7 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.7
+ * @version 0.9.8
  */
 public final class ValueSet extends Taggable {
 
@@ -32,7 +32,7 @@ public final class ValueSet extends Taggable {
     private int keyLength;
     private int valueLength;
     private boolean notCreated = true;
-    private Map<String, String> values = new LinkedHashMap<>();
+    private Map<String, ValueSetValue> values = new LinkedHashMap<>();
 
     public String getLabel() {
         return label;
@@ -66,7 +66,7 @@ public final class ValueSet extends Taggable {
         this.valueLength = valueLength;
     }
 
-    public Map<String, String> getValues() {
+    public Map<String, ValueSetValue> getValues() {
         return values;
     }
 
@@ -74,11 +74,11 @@ public final class ValueSet extends Taggable {
         return this.values.containsKey(key);
     }
 
-    public String getValue(String key) {
+    public ValueSetValue getValue(String key) {
         return this.values.get(key);
     }
 
-    public void addValue(String key, String value) {
+    public void addValue(String key, ValueSetValue value) {
         this.values.put(key, value);
         if (key.trim().length() > 1) {
             keyLength = Math.max(keyLength, key.trim().length());
@@ -106,9 +106,9 @@ public final class ValueSet extends Taggable {
     }
 
     public void removeEmptyValues() {
-        Iterator<Map.Entry<String, String>> it = this.values.entrySet().iterator();
+        Iterator<Map.Entry<String, ValueSetValue>> it = this.values.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<String, String> entry = it.next();
+            Map.Entry<String, ValueSetValue> entry = it.next();
             if (entry.getKey().trim().isEmpty()) {
                 it.remove();
             }
