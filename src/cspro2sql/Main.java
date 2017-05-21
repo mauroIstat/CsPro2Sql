@@ -42,11 +42,12 @@ import org.apache.commons.cli.ParseException;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.8
+ * @author Paolo Giacomi <giacomi @ istat.it>
+ * @version 0.9.9
  */
 public class Main {
 
-    private static final String VERSION = "0.9.8";
+    private static final String VERSION = "0.9.9";
 
     public static void main(String[] args) {
         //Get command line options
@@ -54,10 +55,45 @@ public class Main {
         boolean error = false;
 
         //Parse the dictionary
+        Dictionary dictionary = parseDictionary(opts);
+        Dictionary pesDictionary = parsePesDictionary(opts);
+
+        if (opts.schemaEngine) {
+            error = !SchemaEngine.execute(dictionary, opts.prop, opts.foreignKeys, opts.ps);
+        } else if (opts.loaderEngine) {
+            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
+        } else if (opts.monitorEngine) {
+            error = !MonitorEngine.execute(dictionary, opts.prop, opts.ps);
+        } else if (opts.updateEngine) {
+            error = !UpdateEngine.execute(dictionary, opts.prop);
+        } else if (opts.statusEngine) {
+            error = !StatusEngine.execute(opts.prop);
+        } else if (opts.linkageEngine) {
+            error = !LinkageEngine.execute(dictionary, pesDictionary, opts.prop, opts.ps);
+        }
+        if (opts.ps != null) {
+            opts.ps.close();
+        }
+
+        if (error) {
+            System.exit(1);
+        }
+    }
+
+    private static Dictionary parseDictionary(CsPro2SqlOptions opts) {
+        return parseDictionary(opts, opts.dictFile, "");
+    }
+    
+    private static Dictionary parsePesDictionary(CsPro2SqlOptions opts) {
+        return parseDictionary(opts, opts.dictPesFile, "pes.");
+    }
+    
+    private static Dictionary parseDictionary(CsPro2SqlOptions opts, String dictFile, String prefix) {
+        //Parse the dictionary
         Dictionary dictionary = null;
-        if (opts.dictFile != null && !opts.dictFile.isEmpty()) {
+        if (dictFile != null && !dictFile.isEmpty()) {
             try {
-                dictionary = DictionaryReader.read(opts.dictFile, opts.tablePrefix, opts.multipleResponse, opts.ignoreItems);
+                dictionary = DictionaryReader.read(dictFile, opts.tablePrefix, opts.multipleResponse, opts.ignoreItems);
             } catch (IOException ex) {
                 opts.ps.close();
                 opts.printHelp("Impossible to read dictionary file (" + ex.getMessage() + ")");
@@ -65,12 +101,12 @@ public class Main {
         } else {
             try {
                 Class.forName("com.mysql.jdbc.Driver").newInstance();
-                String srcSchema = opts.prop.getProperty("db.source.schema");
-                String srcDataTable = opts.prop.getProperty("db.source.data.table");
+                String srcSchema = opts.prop.getProperty("db.source." + prefix + "schema");
+                String srcDataTable = opts.prop.getProperty("db.source." + prefix + "data.table");
                 try (Connection connSrc = DriverManager.getConnection(
-                        opts.prop.getProperty("db.source.uri") + "/" + srcSchema + "?autoReconnect=true&useSSL=false",
-                        opts.prop.getProperty("db.source.username"),
-                        opts.prop.getProperty("db.source.password"))) {
+                        opts.prop.getProperty("db.source." + prefix + "uri") + "/" + srcSchema + "?autoReconnect=true&useSSL=false",
+                        opts.prop.getProperty("db.source." + prefix + "username"),
+                        opts.prop.getProperty("db.source." + prefix + "password"))) {
                     connSrc.setReadOnly(true);
                     try (Statement stmt = connSrc.createStatement()) {
                         try (ResultSet r = stmt.executeQuery("select dictionary_full_content from " + srcSchema + ".cspro_dictionaries where dictionary_name = '" + srcDataTable + "'")) {
@@ -84,25 +120,7 @@ public class Main {
                 System.err.println("Impossible to read dictionary from database (" + ex.getMessage() + ")");
             }
         }
-
-        if (opts.schemaEngine) {
-            error = !SchemaEngine.execute(dictionary, opts.prop, opts.foreignKeys, opts.ps);
-        } else if (opts.loaderEngine) {
-            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
-        } else if (opts.monitorEngine) {
-            error = !MonitorEngine.execute(dictionary, opts.prop, opts.ps);
-        } else if (opts.updateEngine) {
-            error = !UpdateEngine.execute(dictionary, opts.prop);
-        } else if (opts.statusEngine) {
-            error = !StatusEngine.execute(opts.prop);
-        }
-        if (opts.ps != null) {
-            opts.ps.close();
-        }
-
-        if (error) {
-            System.exit(1);
-        }
+        return dictionary;
     }
 
     private static CsPro2SqlOptions getCommandLineOptions(String[] args) {
@@ -110,7 +128,7 @@ public class Main {
         options.addOption("a", "all", false, "transfer all the questionnaires");
         options.addOption("cc", "check-constraints", false, "perform constraints check");
         options.addOption("co", "check-only", false, "perform only constraints check (no data transfer)");
-        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status]");
+        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status|linkage]");
         options.addOption("f", "force", false, "skip check of loader multiple running instances");
         options.addOption("fk", "foreign-keys", false, "create foreign keys to value sets");
         options.addOption("h", "help", false, "display this help");
@@ -176,6 +194,9 @@ public class Main {
                 case "status":
                     opts.statusEngine = true;
                     break;
+                case "linkage":
+                    opts.linkageEngine = true;
+                    break;
                 default:
                     opts.printHelp("Wrong engine type!");
                     break;
@@ -196,6 +217,7 @@ public class Main {
 
         opts.prop = prop;
         opts.dictFile = prop.getProperty("dictionary.filename");
+        opts.dictPesFile = prop.getProperty("dictionary.pes.filename");
         opts.schema = prop.getProperty("db.dest.schema");
         if (opts.schema == null || opts.schema.isEmpty()) {
             opts.printHelp("The database schema is mandatory!\nPlease set 'db.dest.schema' into the properties file");
@@ -214,6 +236,7 @@ public class Main {
         boolean monitorEngine;
         boolean updateEngine;
         boolean statusEngine;
+        boolean linkageEngine;
         boolean allRecords;
         boolean foreignKeys;
         boolean checkConstraints;
@@ -221,6 +244,7 @@ public class Main {
         boolean force;
         boolean recovery;
         String dictFile;
+        String dictPesFile;
         String schema;
         String tablePrefix;
         String propertiesFile;
@@ -248,6 +272,7 @@ public class Main {
                     + "CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
+                    + "CsPro2Sql -e linkage -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e update  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e status  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -v\n"

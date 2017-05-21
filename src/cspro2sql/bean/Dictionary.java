@@ -24,7 +24,8 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.8
+ * @author Paolo Giacomi <giacomi @ istat.it>
+ * @version 0.9.9
  */
 public final class Dictionary {
 
@@ -95,6 +96,13 @@ public final class Dictionary {
     public static final Tag TAG_AGE = new Tag("#age");
     public static final Tag TAG_MALE = new Tag("#male");
     public static final Tag TAG_FEMALE = new Tag("#female");
+    public static final Tag TAG_TONGUE = new Tag("#tongue");
+    public static final Tag TAG_MARITAL = new Tag("#marital");
+    public static final Tag TAG_GRADE = new Tag("#grade");
+    public static final Tag TAG_RELATIONSHIP = new Tag("#relationship");
+    public static final Tag TAG_FIRSTNAME = new Tag("#firstname");
+    public static final Tag TAG_MIDDLENAME = new Tag("#middlename");
+    public static final Tag TAG_LASTNAME = new Tag("#lastname");
 
     private final List<Record> records = new LinkedList<>();
     private final Map<String, Record> recordsByName = new LinkedHashMap<>();
