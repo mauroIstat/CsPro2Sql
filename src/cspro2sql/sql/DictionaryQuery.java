@@ -24,9 +24,9 @@ import java.sql.Timestamp;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.10
  */
 public class DictionaryQuery {
 
@@ -166,14 +166,26 @@ public class DictionaryQuery {
     }
 
     public void writeError(DictionaryInfo dictionaryInfo, String msg, Questionnaire q, String script) throws SQLException {
-        insertError.setInt(1, dictionaryInfo.getId());
-        insertError.setString(2, msg);
-        insertError.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
-        insertError.setBytes(4, q.getGuid());
-        insertError.setString(5, q.getPlainText());
-        insertError.setString(6, script);
-        insertError.executeUpdate();
-        insertError.getConnection().commit();
+        try {
+            insertError.setInt(1, dictionaryInfo.getId());
+            insertError.setString(2, msg);
+            insertError.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+            insertError.setBytes(4, q.getGuid());
+            insertError.setString(5, q.getPlainText());
+            insertError.setString(6, script);
+            insertError.executeUpdate();
+            insertError.getConnection().commit();
+        } catch (Exception ex) {
+            System.err.println(q.getPlainText());
+            insertError.setInt(1, dictionaryInfo.getId());
+            insertError.setString(2, msg);
+            insertError.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+            insertError.setBytes(4, q.getGuid());
+            insertError.setString(5, ex.getMessage());
+            insertError.setString(6, "ERROR");
+            insertError.executeUpdate();
+            insertError.getConnection().commit();
+        }
     }
 
     private void setStatus(int dictionaryId, PreparedStatement stmt) throws SQLException {

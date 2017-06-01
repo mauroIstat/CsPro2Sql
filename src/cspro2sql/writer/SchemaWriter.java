@@ -9,7 +9,6 @@ import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -31,7 +30,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.8
+ * @version 0.9.10
  */
 public class SchemaWriter {
 
@@ -130,7 +129,7 @@ public class SchemaWriter {
                     if (!first) {
                         ps.println(",");
                     }
-                    ps.print("    (\"" + e.getKey() + "\",\"" + e.getValue() + "\")");
+                    ps.print("    (\"" + e.getKey() + "\",\"" + e.getValue().replace("\"", "\\\"") + "\")");
                     keys.add(e.getKey());
                     first = false;
                 }

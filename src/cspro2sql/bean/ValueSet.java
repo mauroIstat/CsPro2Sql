@@ -22,7 +22,7 @@ import java.util.Map;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.8
+ * @version 0.9.10
  */
 public final class ValueSet extends Taggable {
 
@@ -80,9 +80,7 @@ public final class ValueSet extends Taggable {
 
     public void addValue(String key, ValueSetValue value) {
         this.values.put(key, value);
-        if (key.trim().length() > 1) {
-            keyLength = Math.max(keyLength, key.trim().length());
-        }
+        keyLength = Math.max(keyLength, key.trim().length());
     }
 
     public boolean isEmpty() {

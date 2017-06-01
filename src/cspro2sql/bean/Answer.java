@@ -18,7 +18,7 @@ package cspro2sql.bean;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.4
+ * @version 0.9.10
  */
 public class Answer {
 
@@ -46,7 +46,8 @@ public class Answer {
         }
         try {
             String v = value;
-            if (Dictionary.ITEM_DECIMAL.equals(item.getDataType())) {
+            boolean decimal = Dictionary.ITEM_DECIMAL.equals(item.getDataType());
+            if (decimal) {
                 if (!v.trim().matches("^[-+]?[0-9]*[.]?[0-9]*$")) {
                     throw new Exception("Not valid number: " + v);
                 }
@@ -57,6 +58,16 @@ public class Answer {
                     if (vs.containsKey(v)) {
                         found = true;
                         break;
+                    }
+                    if (decimal && item.isZeroFill()) {
+                        String vv = v.replaceFirst("^0*", "");
+                        if (vv.isEmpty()) {
+                            vv = "0";
+                        }
+                        if (vs.containsKey(vv)) {
+                            found = true;
+                            break;
+                        }
                     }
                 }
                 if (!found) {

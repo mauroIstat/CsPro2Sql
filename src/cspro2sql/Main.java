@@ -43,11 +43,11 @@ import org.apache.commons.cli.ParseException;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.9
+ * @version 0.9.10
  */
 public class Main {
 
-    private static final String VERSION = "0.9.9";
+    private static final String VERSION = "0.9.10";
 
     public static void main(String[] args) {
         //Get command line options
@@ -83,11 +83,14 @@ public class Main {
     private static Dictionary parseDictionary(CsPro2SqlOptions opts) {
         return parseDictionary(opts, opts.dictFile, "");
     }
-    
+
     private static Dictionary parsePesDictionary(CsPro2SqlOptions opts) {
-        return parseDictionary(opts, opts.dictPesFile, "pes.");
+        if (opts.dictPesFile != null && !opts.dictPesFile.isEmpty()) {
+            return parseDictionary(opts, opts.dictPesFile, "pes.");
+        }
+        return null;
     }
-    
+
     private static Dictionary parseDictionary(CsPro2SqlOptions opts, String dictFile, String prefix) {
         //Parse the dictionary
         Dictionary dictionary = null;

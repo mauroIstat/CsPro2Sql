@@ -46,7 +46,7 @@ import java.util.logging.Logger;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.6
+ * @version 0.9.10
  */
 public class LoaderEngine {
 
@@ -98,7 +98,6 @@ public class LoaderEngine {
                     DictionaryQuery dictionaryQuery = new DictionaryQuery(connDst);
 
                     DictionaryInfo dictionaryInfo = dictionaryQuery.getDictionaryInfo(srcDataTable);
-                    int idDictionary = dictionaryInfo.getId();
                     int lastRevision = dictionaryInfo.getRevision();
 
                     int nextRevision;
@@ -151,6 +150,7 @@ public class LoaderEngine {
                         stmtDst.executeQuery("SET unique_checks=0");
                         stmtDst.executeQuery("SET foreign_key_checks=0");
 
+                        int chunkCounter = 0;
                         boolean chunkError = false;
                         List<Questionnaire> quests = new LinkedList<>();
                         while (result.next()) {
@@ -179,11 +179,15 @@ public class LoaderEngine {
                                 } else {
                                     chunkError |= commitList(dictionary, quests, stmtDst, dictionaryQuery, dictionaryInfo, out);
                                     dictionaryQuery.updateLoaded(dictionaryInfo);
+                                    chunkCounter++;
                                     if (chunkError) {
                                         System.out.print('-');
                                         errors = true;
                                     } else {
                                         System.out.print('+');
+                                    }
+                                    if (chunkCounter % 20 == 0) {
+                                        System.out.println(" Load: " + dictionaryInfo.getLoaded() + " Err: " + dictionaryInfo.getErrors() + " Tot: " + dictionaryInfo.getTotal());
                                     }
                                 }
                                 quests.clear();
