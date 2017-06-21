@@ -31,7 +31,7 @@ import java.util.Properties;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.6
+ * @version 0.9.11
  */
 public class UpdateEngine {
 
@@ -72,9 +72,9 @@ public class UpdateEngine {
                             while (rs.next()) {
                                 String template = rs.getString(1);
                                 System.out.print("Updating " + template + "... ");
-                                writeDst.executeUpdate("TRUNCATE " + schema + ".m" + template);
+                                writeDst.executeUpdate("DROP TABLE IF EXISTS " + schema + ".m" + template);
                                 writeDst.executeQuery("SELECT @ID := 0");
-                                writeDst.executeUpdate("INSERT INTO " + schema + ".m" + template + " SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
+                                writeDst.executeUpdate("CREATE TABLE " + schema + ".m" + template + " AS SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
                                 connDst.commit();
                                 System.out.println("done");
                             }
