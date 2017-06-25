@@ -29,7 +29,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.12
+ * @version 0.9.13
  */
 public class SchemaWriter {
 
@@ -111,7 +111,7 @@ public class SchemaWriter {
                     break;
                 default:
             }
-            ps.println("    VALUE CHAR(" + item.getValueSetsValueLength() + "),");
+            ps.println("    VALUE TEXT,");
             ps.println("    PRIMARY KEY (ID)");
             ps.println(") ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
             ps.println();

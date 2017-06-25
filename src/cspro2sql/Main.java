@@ -36,11 +36,11 @@ import org.apache.commons.cli.ParseException;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.12
+ * @version 0.9.13
  */
 public class Main {
 
-    private static final String VERSION = "0.9.12";
+    private static final String VERSION = "0.9.13";
 
     public static void main(String[] args) {
         CsPro2SqlOptions opts = getCommandLineOptions(args);

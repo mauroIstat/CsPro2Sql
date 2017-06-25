@@ -28,7 +28,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.12
+ * @version 0.9.13
  */
 public class MonitorWriter {
 
@@ -147,13 +147,16 @@ public class MonitorWriter {
         if (ea != null) {
             printAuxTable(tm, tm, "aux_household_returned", "returned", out);
             printAuxTable(tm, tmListing, "aux_listing_returned", "returned", out);
-            printAuxTable(tm, tmExpected, "aux_ea_expected", "expected", out);
+            printAuxTable(tm, tmExpected, "aux_household_expected", "expected", out);
 
             int upTo = 1;
             for (String name : eaName) {
                 printExpectedReport(tm, "r_household_expected_by_" + name.toLowerCase(), upTo++, out);
                 printMaterialized(schema, "r_household_expected_by_" + name.toLowerCase(), out);
             }
+
+            printTotalReport(tm, tmListing, tmExpected, out);
+            printMaterialized(schema, "r_total", out);
         }
 
         return true;
@@ -200,7 +203,7 @@ public class MonitorWriter {
             Item item = eaExpected.get(eaExpected.size() - 1);
             out.println("        " + item.getColunmFullName() + ";");
         } else {
-            out.println("CREATE VIEW " + tm.getDictionary().getSchema() + ".`aux_ea_expected` AS");
+            out.println("CREATE VIEW " + tm.getDictionary().getSchema() + ".`aux_household_expected` AS");
             out.println("    SELECT ");
             for (Item item : mainTm.getEa()) {
                 out.println("        '" + item.getName() + "' AS `" + item.getName() + "`,");
@@ -273,7 +276,7 @@ public class MonitorWriter {
             out.println("            AND (`h`.`" + item.getName() + "` = `l`.`" + item.getName() + "`)");
         }
         out.println("        JOIN");
-        printSubTable(tm, "aux_ea_expected", "expected", upTo, out);
+        printSubTable(tm, "aux_household_expected", "expected", upTo, out);
         out.println("        `e` ON");
         out.println("            (`h`.`" + ea.get(0).getName() + "` = `e`.`" + ea.get(0).getName() + "`)");
         for (int i = 1; i < upTo; i++) {
@@ -289,7 +292,7 @@ public class MonitorWriter {
         List<Item> ea = tm.getEa();
 
         out.println("        (SELECT");
-        for (int i = 0; i < upTo; i++) {
+        for (int i = 0; i < upTo && i < ea.size(); i++) {
             Item item = ea.get(i);
             out.println("                `" + tableName + "`." + item.getName() + " AS " + item.getName() + ",");
         }
@@ -297,11 +300,47 @@ public class MonitorWriter {
         out.println("            FROM `" + schema + "`.`" + tableName + "`");
         out.println("            GROUP BY");
         out.print("                `" + tableName + "`." + ea.get(0).getName());
-        for (int i = 0; i < upTo; i++) {
+        for (int i = 0; i < upTo && i < ea.size(); i++) {
             Item item = ea.get(i);
             out.print(",\n                `" + tableName + "`." + item.getName());
         }
         out.println();
         out.println("            )");
     }
+
+    private static void printTotalReport(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, PrintStream out) {
+        String schema = tm.getDictionary().getSchema();
+
+        out.println("CREATE VIEW `" + schema + "`.`r_total` AS");
+        out.println("    SELECT ");
+        out.println("        (SELECT ");
+        out.println("                COUNT(0)");
+        out.println("            FROM");
+        printSubTable(tm, "aux_household_returned", "returned", 1000, out);
+        out.println("            `a`) AS `ea_fieldwork`,");
+        out.println("        (SELECT ");
+        out.println("                COUNT(0)");
+        out.println("            FROM");
+        printSubTable(tm, "aux_listing_returned", "returned", 1000, out);
+        out.println("            `a`) AS `ea_freshlist`,");
+        out.println("        (SELECT ");
+        out.println("                COUNT(0)");
+        out.println("            FROM");
+        printSubTable(tm, "aux_household_expected", "expected", 1000, out);
+        out.println("            `a`) AS `ea_expected`,");
+        out.println("        (SELECT ");
+        out.println("                COUNT(0)");
+        out.println("            FROM");
+        out.println("                " + tm.getDictionary().getMainRecord().getFullTableName() + ") AS `household_fieldwork`,");
+        out.println("        (SELECT ");
+        out.println("                COUNT(0)");
+        out.println("            FROM");
+        out.println("                " + tmListing.getDictionary().getMainRecord().getFullTableName() + ") AS `household_freshlist`,");
+        out.println("        (SELECT ");
+        out.println("                SUM(`a`.`expected`)");
+        out.println("            FROM");
+        printSubTable(tm, "aux_household_expected", "expected", 1000, out);
+        out.println("                `a`) AS `household_expected`;");
+    }
+
 }
