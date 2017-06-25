@@ -22,7 +22,7 @@ import java.util.Objects;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.7
+ * @version 0.9.12
  */
 public final class Item extends Taggable {
 
@@ -40,6 +40,10 @@ public final class Item extends Taggable {
     private Item parent;
     private final List<Item> subItems = new ArrayList<>();
     private final List<ValueSet> valueSets = new ArrayList<>();
+
+    public Record getRecord() {
+        return record;
+    }
 
     public void setRecord(Record record) {
         this.record = record;
@@ -200,6 +204,10 @@ public final class Item extends Taggable {
             return null;
         }
         return v;
+    }
+
+    public String getColunmFullName() {
+        return getRecord().getTableName() + "." + getName();
     }
 
     @Override

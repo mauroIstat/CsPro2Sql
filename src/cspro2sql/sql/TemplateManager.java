@@ -1,6 +1,7 @@
 package cspro2sql.sql;
 
 import cspro2sql.bean.Dictionary;
+import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.Tag;
 import java.io.BufferedReader;
@@ -8,10 +9,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.regex.Pattern;
 
 /**
@@ -32,41 +33,53 @@ import java.util.regex.Pattern;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.8
+ * @version 0.9.12
  */
 public class TemplateManager {
 
     private static final Pattern PARAM_KEY = Pattern.compile("[\\s`.']@");
 
+    private final Dictionary dictionary;
     private final Map<String, String> params;
-    private final String[] ea;
-    private final String[] eaName;
-    private final String[] eaDescription;
+    private final List<Item> ea;
+    private final List<String> eaName;
+    private final List<String> eaDescription;
     private final int[] ageRange;
 
-    public TemplateManager(Dictionary dictionary, Properties prop) {
+    public TemplateManager(Dictionary dictionary) {
+        this.dictionary = dictionary;
         Record mainRecord = dictionary.getMainRecord();
-        String schema = prop.getProperty("db.dest.schema");
+        String schema = dictionary.getSchema();
 
         this.params = new HashMap<>();
         this.params.put("@SCHEMA", schema);
-        this.params.put("@SOURCE_DATA_TABLE", prop.getProperty("db.source.data.table"));
+        this.params.put("@SOURCE_DATA_TABLE", dictionary.getName());
         this.params.put("@QUESTIONNAIRE_TABLE", mainRecord.getTableName());
         this.params.put("@QUESTIONNAIRE_COLUMN_BASE", mainRecord.getName());
 
-        if (prop.containsKey("column.questionnaire.ea")
-                && prop.containsKey("column.questionnaire.ea.name")
-                && prop.containsKey("column.questionnaire.ea.description")) {
-            this.ea = prop.getProperty("column.questionnaire.ea").split(",");
-            this.eaName = Arrays.copyOf(prop.getProperty("column.questionnaire.ea.name").split(","), ea.length);
-            this.eaDescription = Arrays.copyOf(prop.getProperty("column.questionnaire.ea.description").split(","), ea.length);
-            for (int i = 0; i < eaDescription.length; i++) {
-                if (eaDescription[i] != null && !eaDescription[i].isEmpty()) {
-                    eaDescription[i] = mainRecord.getValueSetPrefix() + eaDescription[i];
+        if (dictionary.hasTagged(Dictionary.TAG_TERRITORY)) {
+            Iterable<Item> territories = dictionary.getTaggedItems(Dictionary.TAG_TERRITORY);
+            this.ea = new ArrayList<>();
+            this.eaName = new ArrayList<>();
+            this.eaDescription = new ArrayList<>();
+            for (Item territory : territories) {
+                this.ea.add(territory);
+                Tag tag = territory.getTag(Dictionary.TAG_TERRITORY);
+                if (tag.getValue() != null) {
+                    String[] tagValues = tag.getValue().split(",");
+                    this.eaName.add(tagValues[0]);
+                    if (tagValues.length > 1 && !tagValues[1].isEmpty()) {
+                        this.eaDescription.add(mainRecord.getValueSetPrefix() + tagValues[1]);
+                    } else {
+                        this.eaDescription.add("");
+                    }
+                } else {
+                    this.eaName.add("");
+                    this.eaDescription.add("");
                 }
             }
-            this.params.put("@QUESTIONNAIRE_COLUMN_REGION", ea[0]);
-            this.params.put("@VALUESET_REGION", eaDescription[0]);
+            this.params.put("@QUESTIONNAIRE_COLUMN_REGION", ea.get(0).getName());
+            this.params.put("@VALUESET_REGION", eaDescription.get(0));
         } else {
             this.ea = null;
             this.eaName = null;
@@ -84,67 +97,51 @@ public class TemplateManager {
             } else {
                 this.ageRange = null;
             }
-        } else if (prop.containsKey("range.individual.age")) {
-            String[] ageRangeS = prop.getProperty("range.individual.age").split(",");
-            this.ageRange = new int[ageRangeS.length];
-            for (int i = 0; i < ageRangeS.length; i++) {
-                ageRange[i] = Integer.parseInt(ageRangeS[i]);
-            }
         } else {
             this.ageRange = null;
         }
 
         if (dictionary.hasTagged(Dictionary.TAG_INDIVIDUAL)) {
             this.params.put("@INDIVIDUAL_TABLE", mainRecord.getTablePrefix() + dictionary.getTaggedRecord(Dictionary.TAG_INDIVIDUAL).getName());
-        } else if (prop.containsKey("table.individual")) {
-            this.params.put("@INDIVIDUAL_TABLE", mainRecord.getTablePrefix() + prop.getProperty("table.individual"));
         }
         if (dictionary.hasTagged(Dictionary.TAG_SEX)) {
             String itemName = dictionary.getTaggedItem(Dictionary.TAG_SEX).getName();
             this.params.put("@INDIVIDUAL_COLUMN_SEX", itemName);
             this.params.put("@VALUESET_SEX", mainRecord.getValueSetPrefix() + itemName);
-        } else if (prop.containsKey("column.individual.sex")) {
-            this.params.put("@INDIVIDUAL_COLUMN_SEX", prop.getProperty("column.individual.sex"));
-            this.params.put("@VALUESET_SEX", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.sex"));
         }
         if (dictionary.hasTagged(Dictionary.TAG_AGE)) {
             this.params.put("@INDIVIDUAL_COLUMN_AGE", dictionary.getTaggedItem(Dictionary.TAG_AGE).getName());
-        } else if (prop.containsKey("column.individual.age")) {
-            this.params.put("@INDIVIDUAL_COLUMN_AGE", prop.getProperty("column.individual.age"));
         }
         if (dictionary.hasTagged(Dictionary.TAG_RELIGION)) {
             String itemName = dictionary.getTaggedItem(Dictionary.TAG_RELIGION).getName();
             this.params.put("@INDIVIDUAL_COLUMN_RELIGION", itemName);
             this.params.put("@VALUESET_RELIGION", mainRecord.getValueSetPrefix() + itemName);
-        } else if (prop.containsKey("column.individual.religion")) {
-            this.params.put("@INDIVIDUAL_COLUMN_RELIGION", prop.getProperty("column.individual.religion"));
-            this.params.put("@VALUESET_RELIGION", mainRecord.getValueSetPrefix() + prop.getProperty("column.individual.religion"));
         }
         if (dictionary.hasTagged(Dictionary.TAG_MALE)) {
             this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", dictionary.getTaggedValueSetValue(Dictionary.TAG_MALE).getKey());
-        } else if (prop.containsKey("column.individual.sex.value.male")) {
-            this.params.put("@INDIVIDUAL_VALUE_SEX_MALE", prop.getProperty("column.individual.sex.value.male"));
         }
         if (dictionary.hasTagged(Dictionary.TAG_FEMALE)) {
             this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", dictionary.getTaggedValueSetValue(Dictionary.TAG_FEMALE).getKey());
-        } else if (prop.containsKey("column.individual.sex.value.female")) {
-            this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", prop.getProperty("column.individual.sex.value.female"));
         }
+    }
+
+    public Dictionary getDictionary() {
+        return dictionary;
     }
 
     public String getParam(String key) {
         return this.params.get(key);
     }
 
-    public String[] getEa() {
+    public List<Item> getEa() {
         return ea;
     }
 
-    public String[] getEaName() {
+    public List<String> getEaName() {
         return eaName;
     }
 
-    public String[] getEaDescription() {
+    public List<String> getEaDescription() {
         return eaDescription;
     }
 

@@ -2,7 +2,6 @@ package cspro2sql.bean;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,16 +23,29 @@ import java.util.regex.Pattern;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.8
+ * @version 0.9.12
  */
 public final class BeanFactory {
 
     private static final Pattern TAGS = Pattern.compile("(#[^\\s#]+(\\[[.*\\[\\#\\]]+\\])?)");
     private static final Pattern TAG_VALUE = Pattern.compile("^(#.*)\\[(.+)\\]$");
 
-    public static Record createRecord(BufferedReader br, String tablePrefix) throws IOException {
+    public static void parseDictionary(BufferedReader br, Dictionary dictionary) throws IOException {
         String line;
-        Record record = new Record(tablePrefix);
+        while ((line = br.readLine()) != null) {
+            if (line.startsWith(Dictionary.DICT_NAME)) {
+                dictionary.setName(getValue(line));
+            } else if (line.startsWith(Dictionary.DICT_NOTE)) {
+                parseNote(dictionary, getValue(line));
+            } else if (line.isEmpty()) {
+                break;
+            }
+        }
+    }
+
+    public static Record createRecord(BufferedReader br, String tablePrefix, Dictionary dictionary) throws IOException {
+        String line;
+        Record record = new Record(dictionary, tablePrefix);
         while ((line = br.readLine()) != null) {
             if (line.startsWith(Dictionary.DICT_NAME)) {
                 record.setName(getValue(line));
@@ -54,7 +66,7 @@ public final class BeanFactory {
         return record;
     }
 
-    public static Item createItem(BufferedReader br, Set<String> multipleResponse) throws IOException {
+    public static Item createItem(BufferedReader br) throws IOException {
         String line;
         Item item = new Item();
         while ((line = br.readLine()) != null) {
@@ -81,9 +93,6 @@ public final class BeanFactory {
             } else if (line.isEmpty()) {
                 break;
             }
-        }
-        if (multipleResponse.contains(item.getName())) {
-            item.addTag(Dictionary.TAG_MULTIPLE_RESPONSE);
         }
         return item;
     }
@@ -113,7 +122,7 @@ public final class BeanFactory {
         return valueSet;
     }
 
-    private static String getValue(String s) {
+    public static String getValue(String s) {
         return s.split("=")[1];
     }
 

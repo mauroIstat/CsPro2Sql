@@ -23,10 +23,11 @@ import java.util.Objects;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.7
+ * @version 0.9.12
  */
 public final class Record extends Taggable {
 
+    private final Dictionary dictionary;
     private final String tablePrefix;
     private final String valueSetPrefix;
     private String name;
@@ -39,7 +40,8 @@ public final class Record extends Taggable {
     private boolean isMainRecord = false;
     private final List<Item> items = new LinkedList<>();
 
-    public Record(String tablePrefix) {
+    public Record(Dictionary dictionary, String tablePrefix) {
+        this.dictionary = dictionary;
         if (tablePrefix == null || tablePrefix.isEmpty()) {
             this.tablePrefix = "";
             this.valueSetPrefix = "VS_";
@@ -63,6 +65,10 @@ public final class Record extends Taggable {
 
     public String getTableName() {
         return (tablePrefix + name).toUpperCase();
+    }
+
+    public String getFullTableName() {
+        return dictionary.getSchema() + "." + (tablePrefix + name).toUpperCase();
     }
 
     public void setName(String name) {
@@ -119,7 +125,6 @@ public final class Record extends Taggable {
 
     public void replaceItemWithSplit(Item item, List<Item> split) {
         if (item.isSubItem()) {
-            // TODO to test
             List<Item> subItems = item.getParent().getSubItems();
             int i = subItems.indexOf(item);
             for (Item it : split) {
@@ -138,6 +143,9 @@ public final class Record extends Taggable {
     }
 
     public Record getMainRecord() {
+        if (isMainRecord()) {
+            return this;
+        }
         return mainRecord;
     }
 

@@ -25,9 +25,9 @@ import java.util.Map;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.9
+ * @version 0.9.12
  */
-public final class Dictionary {
+public final class Dictionary extends Taggable {
 
     public static final String DICT_HEADER = "[Dictionary]";
     public static final String DICT_LANGUAGES = "[Languages]";
@@ -103,16 +103,44 @@ public final class Dictionary {
     public static final Tag TAG_FIRSTNAME = new Tag("#firstname");
     public static final Tag TAG_MIDDLENAME = new Tag("#middlename");
     public static final Tag TAG_LASTNAME = new Tag("#lastname");
+    public static final Tag TAG_TERRITORY = new Tag("#territory");
+    public static final Tag TAG_FIELDWORK = new Tag("#fieldwork");
+    public static final Tag TAG_LISTING = new Tag("#listing");
+    public static final Tag TAG_EXPECTED = new Tag("#expected");
+    public static final Tag TAG_EXPECTED_QUESTIONNAIRES = new Tag("#expectedQuestionnaires");
 
+    private final String schema, prefix;
     private final List<Record> records = new LinkedList<>();
     private final Map<String, Record> recordsByName = new LinkedHashMap<>();
     private final Map<String, ValueSet> valueSets = new HashMap<>();
     private final Map<Tag, List<Taggable>> tags = new HashMap<>();
 
+    private String name;
     private Record lastRecord;
     private List<Item> lastItems;
     private List<Item> lastItemsNotSubItem;
+    
+    public Dictionary(String schema, String prefix) {
+        this.schema = schema;
+        this.prefix = prefix;
+    }
 
+    public String getSchema() {
+        return schema;
+    }
+
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    
     public void addRecord(Record record) {
         if (record.hasTag(TAG_IGNORE)) {
             return;
@@ -128,9 +156,9 @@ public final class Dictionary {
         this.recordsByName.put(record.getRecordTypeValue(), record);
     }
 
-    public void addItem(Item item) {
+    public boolean addItem(Item item) {
         if (item.hasTag(TAG_IGNORE)) {
-            return;
+            return false;
         }
         if (item.getOccurrences() > 1) {
             List<Item> its = new LinkedList<>();
@@ -157,6 +185,7 @@ public final class Dictionary {
             }
             addLastItem(item);
         }
+        return true;
     }
 
     public void addValueSet(ValueSet valueSet) {
@@ -254,7 +283,10 @@ public final class Dictionary {
     }
 
     public Item getTaggedItem(Tag tag) {
-        return (Item) tags.get(tag).get(0);
+        if (tags.containsKey(tag)) {
+            return (Item) tags.get(tag).get(0);
+        }
+        return null;
     }
 
     public Iterable<Item> getTaggedItems(Tag tag) {

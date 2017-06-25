@@ -9,7 +9,6 @@ import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -30,13 +29,13 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.10
+ * @version 0.9.12
  */
 public class SchemaWriter {
 
-    public static void write(Dictionary dictionary, Properties prop, boolean foreignKeys, PrintStream ps) {
-        TemplateManager tm = new TemplateManager(dictionary, prop);
-        String schema = prop.getProperty("db.dest.schema");
+    public static void write(Dictionary dictionary, boolean foreignKeys, PrintStream ps) {
+        TemplateManager tm = new TemplateManager(dictionary);
+        String schema = dictionary.getSchema();
 
         ps.println("CREATE SCHEMA IF NOT EXISTS " + schema + ";");
         ps.println();
@@ -57,7 +56,7 @@ public class SchemaWriter {
         }
 
         for (Record record : dictionary.getRecords()) {
-            ps.println("CREATE TABLE " + schema + "." + record.getTableName() + " (");
+            ps.println("CREATE TABLE " + record.getFullTableName() + " (");
             ps.println("    ID INT(9) UNSIGNED AUTO_INCREMENT,");
             if (!record.isMainRecord()) {
                 ps.println("    " + record.getMainRecord().getName() + " INT(9) UNSIGNED NOT NULL,");
@@ -68,7 +67,7 @@ public class SchemaWriter {
             }
             if (!record.isMainRecord()) {
                 ps.println("    INDEX (" + record.getMainRecord().getName() + "),");
-                ps.println("    FOREIGN KEY (" + record.getMainRecord().getName() + ") REFERENCES " + schema + "." + record.getMainRecord().getTableName() + "(id),");
+                ps.println("    FOREIGN KEY (" + record.getMainRecord().getName() + ") REFERENCES " + record.getMainRecord().getFullTableName() + "(id),");
             }
             ps.println("    PRIMARY KEY (ID)");
             ps.println(") ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");

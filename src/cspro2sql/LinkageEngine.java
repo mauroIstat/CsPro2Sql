@@ -7,8 +7,7 @@ import cspro2sql.writer.LinkageWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -30,7 +29,7 @@ import java.util.Properties;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.9
+ * @version 0.9.12
  * @since 0.9.9
  */
 public class LinkageEngine {
@@ -43,17 +42,11 @@ public class LinkageEngine {
             return;
         }
         try {
-            Dictionary censusDictionary = DictionaryReader.read(
-                    prop.getProperty("dictionary.filename"),
-                    prop.getProperty("db.dest.table.prefix"),
-                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.response", "").split(" *[,] *"))),
-                    new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *"))));
-            Dictionary pesDictionary = DictionaryReader.read(
-                    prop.getProperty("dictionary.pes.filename"),
-                    prop.getProperty("db.dest.pes.table.prefix"),
-                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.pes.response", "").split(" *[,] *"))),
-                    new HashSet<>(Arrays.asList(prop.getProperty("ignore.pes.items", "").split(" *[,] *"))));
-            execute(censusDictionary, pesDictionary, prop, System.out);
+            List<Dictionary> dictionaries = DictionaryReader.parseDictionaries(
+                    prop.getProperty("db.dest.schema"),
+                    prop.getProperty("dictionary"),
+                    prop.getProperty("dictionary.prefix"));
+            execute(dictionaries.get(0), dictionaries.get(1), prop, System.out);
         } catch (Exception ex) {
             System.exit(1);
         }
@@ -61,7 +54,7 @@ public class LinkageEngine {
     
     static boolean execute(Dictionary censusDictionary, Dictionary pesDictionary, Properties prop, PrintStream out) {
         String schema = prop.getProperty("db.dest.schema");
-        TemplateManager tm = new TemplateManager(censusDictionary, prop);
+        TemplateManager tm = new TemplateManager(censusDictionary);
         return LinkageWriter.write(schema, censusDictionary, pesDictionary, tm, out);
     }
     

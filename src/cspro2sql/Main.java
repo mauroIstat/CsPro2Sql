@@ -8,15 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -43,34 +36,39 @@ import org.apache.commons.cli.ParseException;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.11
+ * @version 0.9.12
  */
 public class Main {
 
-    private static final String VERSION = "0.9.11";
+    private static final String VERSION = "0.9.12";
 
     public static void main(String[] args) {
-        //Get command line options
         CsPro2SqlOptions opts = getCommandLineOptions(args);
         boolean error = false;
-
-        //Parse the dictionary
-        Dictionary dictionary = parseDictionary(opts);
-        Dictionary pesDictionary = parsePesDictionary(opts);
+        List<Dictionary> dictionaries;
+        try {
+            dictionaries = DictionaryReader.parseDictionaries(opts.schema, opts.dictionary, opts.tablePrefix);
+        } catch (Exception e) {
+            opts.ps.close();
+            opts.printHelp(e.getMessage());
+            System.exit(1);
+            return;
+        }
 
         if (opts.schemaEngine) {
-            error = !SchemaEngine.execute(dictionary, opts.prop, opts.foreignKeys, opts.ps);
+            error = !SchemaEngine.execute(dictionaries, opts.foreignKeys, opts.ps);
         } else if (opts.loaderEngine) {
-            error = !LoaderEngine.execute(dictionary, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
+            error = !LoaderEngine.execute(dictionaries, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
         } else if (opts.monitorEngine) {
-            error = !MonitorEngine.execute(dictionary, opts.prop, opts.ps);
+            error = !MonitorEngine.execute(dictionaries, opts.ps);
         } else if (opts.updateEngine) {
-            error = !UpdateEngine.execute(dictionary, opts.prop);
+            error = !UpdateEngine.execute(opts.prop);
         } else if (opts.statusEngine) {
-            error = !StatusEngine.execute(opts.prop);
+            error = !StatusEngine.execute(dictionaries, opts.prop);
         } else if (opts.linkageEngine) {
-            error = !LinkageEngine.execute(dictionary, pesDictionary, opts.prop, opts.ps);
+            //error = !LinkageEngine.execute(dictionary, pesDictionary, opts.prop, opts.ps);
         }
+
         if (opts.ps != null) {
             opts.ps.close();
         }
@@ -78,52 +76,6 @@ public class Main {
         if (error) {
             System.exit(1);
         }
-    }
-
-    private static Dictionary parseDictionary(CsPro2SqlOptions opts) {
-        return parseDictionary(opts, opts.dictFile, "");
-    }
-
-    private static Dictionary parsePesDictionary(CsPro2SqlOptions opts) {
-        if (opts.dictPesFile != null && !opts.dictPesFile.isEmpty()) {
-            return parseDictionary(opts, opts.dictPesFile, "pes.");
-        }
-        return null;
-    }
-
-    private static Dictionary parseDictionary(CsPro2SqlOptions opts, String dictFile, String prefix) {
-        //Parse the dictionary
-        Dictionary dictionary = null;
-        if (dictFile != null && !dictFile.isEmpty()) {
-            try {
-                dictionary = DictionaryReader.read(dictFile, opts.tablePrefix, opts.multipleResponse, opts.ignoreItems);
-            } catch (IOException ex) {
-                opts.ps.close();
-                opts.printHelp("Impossible to read dictionary file (" + ex.getMessage() + ")");
-            }
-        } else {
-            try {
-                Class.forName("com.mysql.jdbc.Driver").newInstance();
-                String srcSchema = opts.prop.getProperty("db.source." + prefix + "schema");
-                String srcDataTable = opts.prop.getProperty("db.source." + prefix + "data.table");
-                try (Connection connSrc = DriverManager.getConnection(
-                        opts.prop.getProperty("db.source." + prefix + "uri") + "/" + srcSchema + "?autoReconnect=true&useSSL=false",
-                        opts.prop.getProperty("db.source." + prefix + "username"),
-                        opts.prop.getProperty("db.source." + prefix + "password"))) {
-                    connSrc.setReadOnly(true);
-                    try (Statement stmt = connSrc.createStatement()) {
-                        try (ResultSet r = stmt.executeQuery("select dictionary_full_content from " + srcSchema + ".cspro_dictionaries where dictionary_name = '" + srcDataTable + "'")) {
-                            r.next();
-                            dictionary = DictionaryReader.readFromString(r.getString(1), opts.tablePrefix, opts.multipleResponse, opts.ignoreItems);
-                        }
-                    }
-                }
-            } catch (ClassNotFoundException | SQLException | IOException | InstantiationException | IllegalAccessException ex) {
-                opts.ps.close();
-                System.err.println("Impossible to read dictionary from database (" + ex.getMessage() + ")");
-            }
-        }
-        return dictionary;
     }
 
     private static CsPro2SqlOptions getCommandLineOptions(String[] args) {
@@ -219,20 +171,17 @@ public class Main {
         }
 
         opts.prop = prop;
-        opts.dictFile = prop.getProperty("dictionary.filename");
-        opts.dictPesFile = prop.getProperty("dictionary.pes.filename");
+        opts.dictionary = prop.getProperty("dictionary");
         opts.schema = prop.getProperty("db.dest.schema");
         if (opts.schema == null || opts.schema.isEmpty()) {
             opts.printHelp("The database schema is mandatory!\nPlease set 'db.dest.schema' into the properties file");
         }
-        opts.tablePrefix = prop.getProperty("db.dest.table.prefix", "");
-        opts.multipleResponse = new HashSet<>(Arrays.asList(prop.getProperty("multiple.response", "").split(" *[,] *")));
-        opts.ignoreItems = new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *")));
+        opts.tablePrefix = prop.getProperty("dictionary.prefix", "");
 
         return opts;
     }
 
-    private static class CsPro2SqlOptions {
+    public static class CsPro2SqlOptions {
 
         boolean schemaEngine;
         boolean loaderEngine;
@@ -246,13 +195,10 @@ public class Main {
         boolean checkOnly;
         boolean force;
         boolean recovery;
-        String dictFile;
-        String dictPesFile;
+        String dictionary;
         String schema;
         String tablePrefix;
         String propertiesFile;
-        Set<String> multipleResponse;
-        Set<String> ignoreItems;
         PrintStream ps = null;
         Properties prop;
         private final Options options;

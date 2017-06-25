@@ -8,6 +8,7 @@ import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,7 +30,7 @@ import java.util.Map;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.9
+ * @version 0.9.12
  * @since 0.9.9
  */
 public class LinkageWriter {
@@ -58,7 +59,7 @@ public class LinkageWriter {
     }
 
     private static void printLinkage(String schema, String table, Dictionary dictionary, TemplateManager tm, PrintStream out) {
-        String[] eas = tm.getEa();
+        List<Item> eas = tm.getEa();
 
         Record mainRecord = dictionary.getMainRecord();
         Record individual = dictionary.getTaggedRecord(Dictionary.TAG_INDIVIDUAL);
@@ -95,9 +96,9 @@ public class LinkageWriter {
                 out.println("    i." + item.getName() + " " + tag.getKey() + ",");
             }
         }
-        out.print("    concat(" + eas[0]);
-        for (int i = 1; i < eas.length; i++) {
-            out.print(",'-',q." + eas[i]);
+        out.print("    concat(" + eas.get(0).getName());
+        for (int i = 1; i < eas.size(); i++) {
+            out.print(",'-',q." + eas.get(i).getName());
         }
         out.print(") COD_EA");
         for (Map.Entry<String, Tag> tag : normalizedTags.entrySet()) {
@@ -112,7 +113,7 @@ public class LinkageWriter {
             }
         }
         out.println();
-        out.println("FROM " + schema + "." + individual.getTableName() + " i INNER JOIN " + schema + "." + mainRecord.getTableName() + " q ON q.ID = i." + mainRecord.getName() + ");");
+        out.println("FROM " + individual.getFullTableName() + " i INNER JOIN " + mainRecord.getFullTableName() + " q ON q.ID = i." + mainRecord.getName() + ");");
         out.println();
         out.println("ALTER TABLE " + schema + "." + table + " ADD PRIMARY KEY (`ID_INDIV`);");
         out.println();

@@ -1,7 +1,5 @@
 package cspro2sql;
 
-import cspro2sql.bean.Dictionary;
-import cspro2sql.reader.DictionaryReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -9,8 +7,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Properties;
 
 /**
@@ -31,7 +27,7 @@ import java.util.Properties;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.11
+ * @version 0.9.12
  */
 public class UpdateEngine {
 
@@ -43,18 +39,13 @@ public class UpdateEngine {
             return;
         }
         try {
-            Dictionary dictionary = DictionaryReader.read(
-                    prop.getProperty("dictionary.filename"),
-                    prop.getProperty("db.dest.table.prefix"),
-                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.response", "").split(" *[,] *"))),
-                    new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *"))));
-            execute(dictionary, prop);
+            execute(prop);
         } catch (Exception ex) {
             System.exit(1);
         }
     }
 
-    static boolean execute(Dictionary dictionary, Properties prop) {
+    static boolean execute(Properties prop) {
         String schema = prop.getProperty("db.dest.schema");
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
@@ -74,7 +65,7 @@ public class UpdateEngine {
                                 System.out.print("Updating " + template + "... ");
                                 writeDst.executeUpdate("DROP TABLE IF EXISTS " + schema + ".m" + template);
                                 writeDst.executeQuery("SELECT @ID := 0");
-                                writeDst.executeUpdate("CREATE TABLE " + schema + ".m" + template + " AS SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
+                                writeDst.executeUpdate("CREATE TABLE " + schema + ".m" + template + " (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
                                 connDst.commit();
                                 System.out.println("done");
                             }

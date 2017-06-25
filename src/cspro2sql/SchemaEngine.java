@@ -6,8 +6,7 @@ import cspro2sql.writer.SchemaWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,7 +29,7 @@ import java.util.logging.Logger;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.6
+ * @version 0.9.12
  */
 public class SchemaEngine {
 
@@ -49,12 +48,11 @@ public class SchemaEngine {
 
         //Parse dictionary file
         try {
-            Dictionary dictionary = DictionaryReader.read(
-                    prop.getProperty("dictionary.filename"),
-                    prop.getProperty("db.dest.table.prefix"),
-                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.response", "").split(" *[,] *"))),
-                    new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *"))));
-            execute(dictionary, prop, false, System.out);
+            List<Dictionary> dictionaries = DictionaryReader.parseDictionaries(
+                    prop.getProperty("db.dest.schema"),
+                    prop.getProperty("dictionary"),
+                    prop.getProperty("dictionary.prefix"));
+            execute(dictionaries, false, System.out);
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Impossible to create the database schema", ex);
             System.exit(1);
@@ -62,8 +60,10 @@ public class SchemaEngine {
 
     }
 
-    static boolean execute(Dictionary dictionary, Properties prop, boolean foreignKeys, PrintStream out) {
-        SchemaWriter.write(dictionary, prop, foreignKeys, out);
+    static boolean execute(List<Dictionary> dictionaries, boolean foreignKeys, PrintStream out) {
+        for (Dictionary dictionary : dictionaries) {
+            SchemaWriter.write(dictionary, foreignKeys, out);
+        }
         return true;
     }
 

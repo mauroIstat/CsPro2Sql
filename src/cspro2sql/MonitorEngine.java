@@ -7,8 +7,7 @@ import cspro2sql.writer.MonitorWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -29,7 +28,7 @@ import java.util.Properties;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.6
+ * @version 0.9.12
  */
 public class MonitorEngine {
 
@@ -41,21 +40,28 @@ public class MonitorEngine {
             return;
         }
         try {
-            Dictionary dictionary = DictionaryReader.read(
-                    prop.getProperty("dictionary.filename"),
-                    prop.getProperty("db.dest.table.prefix"),
-                    new HashSet<>(Arrays.asList(prop.getProperty("multiple.response", "").split(" *[,] *"))),
-                    new HashSet<>(Arrays.asList(prop.getProperty("ignore.items", "").split(" *[,] *"))));
-            execute(dictionary, prop, System.out);
+            List<Dictionary> dictionaries = DictionaryReader.parseDictionaries(
+                    prop.getProperty("db.dest.schema"),
+                    prop.getProperty("dictionary"),
+                    prop.getProperty("dictionary.prefix"));
+            execute(dictionaries, System.out);
         } catch (Exception ex) {
             System.exit(1);
         }
     }
 
-    static boolean execute(Dictionary dictionary, Properties prop, PrintStream out) {
-        String schema = prop.getProperty("db.dest.schema");
-        TemplateManager tm = new TemplateManager(dictionary, prop);
-        return MonitorWriter.write(schema, tm, out);
+    static boolean execute(List<Dictionary> dictionaries, PrintStream out) {
+        TemplateManager tmFieldwork = null, tmListing = null, tmExpected = null;
+        for (Dictionary dictionary : dictionaries) {
+            if (dictionary.hasTag(Dictionary.TAG_FIELDWORK)) {
+                tmFieldwork = new TemplateManager(dictionary);
+            } else if (dictionary.hasTag(Dictionary.TAG_LISTING)) {
+                tmListing = new TemplateManager(dictionary);
+            } else if (dictionary.hasTag(Dictionary.TAG_EXPECTED)) {
+                tmExpected = new TemplateManager(dictionary);
+            }
+        }
+        return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, out);
     }
 
 }

@@ -1,12 +1,15 @@
 package cspro2sql;
 
+import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.DictionaryInfo;
+import cspro2sql.reader.DictionaryReader;
 import cspro2sql.sql.DictionaryQuery;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -25,9 +28,9 @@ import java.util.Properties;
  * Licence for the specific language governing permissions and limitations under
  * the Licence.
  *
- * @author Guido Drovandi <drovandi @ istat.it> 
+ * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9
+ * @version 0.9.12
  */
 public class StatusEngine {
 
@@ -39,34 +42,40 @@ public class StatusEngine {
             return;
         }
         try {
-            execute(prop);
+            List<Dictionary> dictionaries = DictionaryReader.parseDictionaries(
+                    prop.getProperty("db.dest.schema"),
+                    prop.getProperty("dictionary"),
+                    prop.getProperty("dictionary.prefix"));
+            execute(dictionaries, prop);
         } catch (Exception ex) {
             System.exit(1);
         }
     }
 
-    static boolean execute(Properties prop) {
+    static boolean execute(List<Dictionary> dictionaries, Properties prop) {
         boolean notRunning = true;
-        String srcDataTable = prop.getProperty("db.source.data.table");
+        for (Dictionary dictionary : dictionaries) {
+            String srcDataTable = dictionary.getName();
 
-        try {
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            try {
+                Class.forName("com.mysql.jdbc.Driver").newInstance();
 
-            //Connect to the destination database
-            try (Connection connDst = DriverManager.getConnection(
-                    prop.getProperty("db.dest.uri") + "/" + prop.getProperty("db.dest.schema") + "?autoReconnect=true&useSSL=false",
-                    prop.getProperty("db.dest.username"),
-                    prop.getProperty("db.dest.password"))) {
-                connDst.setReadOnly(true);
+                //Connect to the destination database
+                try (Connection connDst = DriverManager.getConnection(
+                        prop.getProperty("db.dest.uri") + "/" + dictionary.getSchema() + "?autoReconnect=true&useSSL=false",
+                        prop.getProperty("db.dest.username"),
+                        prop.getProperty("db.dest.password"))) {
+                    connDst.setReadOnly(true);
 
-                DictionaryQuery dictionaryQuery = new DictionaryQuery(connDst);
-                DictionaryInfo dictionaryInfo = dictionaryQuery.getDictionaryInfo(srcDataTable);
-                dictionaryInfo.print(System.out);
-                notRunning = !dictionaryInfo.isRunning();
+                    DictionaryQuery dictionaryQuery = new DictionaryQuery(connDst);
+                    DictionaryInfo dictionaryInfo = dictionaryQuery.getDictionaryInfo(srcDataTable);
+                    dictionaryInfo.print(System.out);
+                    notRunning = !dictionaryInfo.isRunning();
+                }
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | SQLException ex) {
+                System.out.println("Impossible to get LOADER status!");
+                return false;
             }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | SQLException ex) {
-            System.out.println("Impossible to get LOADER status!");
-            return false;
         }
         return notRunning;
     }
