@@ -36,11 +36,11 @@ import org.apache.commons.cli.ParseException;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.13
+ * @version 0.9.14
  */
 public class Main {
 
-    private static final String VERSION = "0.9.13";
+    private static final String VERSION = "0.9.14";
 
     public static void main(String[] args) {
         CsPro2SqlOptions opts = getCommandLineOptions(args);
@@ -58,7 +58,22 @@ public class Main {
         if (opts.schemaEngine) {
             error = !SchemaEngine.execute(dictionaries, opts.foreignKeys, opts.ps);
         } else if (opts.loaderEngine) {
-            error = !LoaderEngine.execute(dictionaries, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
+            if (opts.delay == null) {
+                error = !LoaderEngine.execute(dictionaries, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
+            } else {
+                while (true) {
+                    try {
+                        LoaderEngine.execute(dictionaries, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
+                    } catch (Exception ex) {
+                        System.err.println(ex.getMessage());
+                    }
+                    try {
+                        Thread.sleep(opts.delay);
+                    } catch (Exception ex) {
+                        System.err.println(ex.getMessage());
+                    }
+                }
+            }
         } else if (opts.monitorEngine) {
             error = !MonitorEngine.execute(dictionaries, opts.ps);
         } else if (opts.updateEngine) {
@@ -67,6 +82,20 @@ public class Main {
             error = !StatusEngine.execute(dictionaries, opts.prop);
         } else if (opts.linkageEngine) {
             //error = !LinkageEngine.execute(dictionary, pesDictionary, opts.prop, opts.ps);
+        } else if (opts.loadAndUpdate) {
+            while (true) {
+                try {
+                    LoaderEngine.execute(dictionaries, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
+                    UpdateEngine.execute(opts.prop);
+                } catch (Exception ex) {
+                    System.err.println(ex.getMessage());
+                }
+                try {
+                    Thread.sleep(opts.delay);
+                } catch (Exception ex) {
+                    System.err.println(ex.getMessage());
+                }
+            }
         }
 
         if (opts.ps != null) {
@@ -91,21 +120,21 @@ public class Main {
         options.addOption("p", "properties", true, "properties file");
         options.addOption("r", "recovery", false, "recover a broken session of the loader");
         options.addOption("v", "version", false, "print the version of the programm");
+        options.addOption("d", "delay", true, "perform again after DELAY minutes");
 
         CsPro2SqlOptions opts = new CsPro2SqlOptions(options);
-        //Start parsing command line
         try {
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(options, args);
 
-            if (cmd.hasOption("h") || args.length == 0) { //help option or empty option
+            if (cmd.hasOption("h") || args.length == 0) {
                 opts.printHelp();
             }
             if (cmd.hasOption("v")) {
                 opts.printVersion();
             }
 
-            if (!cmd.hasOption("e")) { //Loader engine option provided
+            if (!cmd.hasOption("e")) {
                 opts.printHelp("The engine type is mandatory!");
             }
             if (!cmd.hasOption("p")) {
@@ -125,7 +154,9 @@ public class Main {
                     }
                     break;
                 case "loader":
-                    opts.loaderEngine = true;
+                case "LU":
+                    opts.loaderEngine = "loader".equals(engine);
+                    opts.loadAndUpdate = "LU".equals(engine);
                     opts.checkConstraints = cmd.hasOption("cc");
                     opts.checkOnly = cmd.hasOption("co");
                     opts.allRecords = cmd.hasOption("a");
@@ -133,6 +164,15 @@ public class Main {
                     opts.recovery = cmd.hasOption("r");
                     if (cmd.hasOption("o")) {
                         opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
+                    }
+                    if (opts.loadAndUpdate && !cmd.hasOption("d")) {
+                        opts.printHelp("The delay is mandatory!");
+                    }
+                    if (cmd.hasOption("d")) {
+                        opts.delay = Integer.parseInt(cmd.getOptionValue("d")) * 60 * 1000;
+                        if (opts.delay < 0) {
+                            opts.printHelp("The delay cannot be negative!");
+                        }
                     }
                     break;
                 case "monitor":
@@ -189,6 +229,7 @@ public class Main {
         boolean updateEngine;
         boolean statusEngine;
         boolean linkageEngine;
+        boolean loadAndUpdate;
         boolean allRecords;
         boolean foreignKeys;
         boolean checkConstraints;
@@ -199,6 +240,7 @@ public class Main {
         String schema;
         String tablePrefix;
         String propertiesFile;
+        Integer delay;
         PrintStream ps = null;
         Properties prop;
         private final Options options;
@@ -219,11 +261,12 @@ public class Main {
             System.out.println("CsPro2Sql - version " + VERSION + "\n");
             formatter.printHelp("\n\n"
                     + "CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]\n"
-                    + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE]\n"
+                    + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE] [-d DELAY]\n"
                     + "CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e linkage -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e update  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e status  -p PROPERTIES_FILE\n"
+                    + "CsPro2Sql -e LU      -p PROPERTIES_FILE -d DELAY [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -v\n"
                     + "\n", options);
             if (errMessage == null) {
