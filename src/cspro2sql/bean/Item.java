@@ -22,7 +22,7 @@ import java.util.Objects;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.12
+ * @version 0.9.15
  */
 public final class Item extends Taggable {
 
@@ -34,6 +34,7 @@ public final class Item extends Taggable {
     private int length;
     private int occurrences;
     private int decimal;
+    private int occurenceNumber;
     private boolean subItem;
     private boolean zeroFill;
     private boolean decimalChar;
@@ -116,6 +117,14 @@ public final class Item extends Taggable {
         this.decimal = decimal;
     }
 
+    public int getOccurenceNumber() {
+        return occurenceNumber;
+    }
+
+    public void setOccurenceNumber(int occurenceNumber) {
+        this.occurenceNumber = occurenceNumber;
+    }
+
     public boolean isSubItem() {
         return subItem;
     }
@@ -145,6 +154,12 @@ public final class Item extends Taggable {
     }
 
     public void addSubItem(Item subItem) {
+        if (this.getOccurrences() > 1) {
+            subItem = subItem.clone();
+            subItem.setName(subItem.getName() + "_" + this.getOccurenceNumber());
+            subItem.setValueSetName(subItem.getName());
+            subItem.setStart(subItem.getStart() + this.getLength() * this.getOccurenceNumber());
+        }
         this.subItems.add(subItem);
         subItem.setRecord(record);
         subItem.setParent(this);

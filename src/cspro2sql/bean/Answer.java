@@ -18,7 +18,7 @@ package cspro2sql.bean;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.10
+ * @version 0.9.15
  */
 public class Answer {
 
@@ -59,10 +59,12 @@ public class Answer {
                         found = true;
                         break;
                     }
-                    if (decimal && item.isZeroFill()) {
+                    if (decimal) {
                         String vv = v.replaceFirst("^0*", "");
                         if (vv.isEmpty()) {
                             vv = "0";
+                        } else if (vv.startsWith(".")) {
+                            vv = "0" + vv;
                         }
                         if (vs.containsKey(vv)) {
                             found = true;

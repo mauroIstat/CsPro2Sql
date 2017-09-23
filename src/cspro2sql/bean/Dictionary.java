@@ -25,7 +25,7 @@ import java.util.Map;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.12
+ * @version 0.9.15
  */
 public final class Dictionary extends Taggable {
 
@@ -164,6 +164,7 @@ public final class Dictionary extends Taggable {
             List<Item> its = new LinkedList<>();
             for (int i = 0; i < item.getOccurrences(); i++) {
                 Item it = item.clone();
+                it.setOccurenceNumber(i);
                 it.setName(it.getName() + "_" + i);
                 it.setValueSetName(item.getName());
                 it.setStart(it.getStart() + i * it.getLength());
