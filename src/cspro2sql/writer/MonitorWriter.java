@@ -28,7 +28,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.13
+ * @version 0.9.16
  */
 public class MonitorWriter {
 
@@ -43,6 +43,9 @@ public class MonitorWriter {
     public static boolean write(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
 
+        tm.addParam("@LISTING", tmListing == null ? "0" : "1");
+        tm.addParam("@EXPECTED", tmExpected == null ? "0" : "1");
+
         out.println("USE " + schema + ";");
         out.println();
 
@@ -54,6 +57,7 @@ public class MonitorWriter {
         try {
             tm.printTemplate("c_user", out);
             tm.printTemplate("cspro2sql_report", out);
+            tm.printTemplate("dashboard_info", out);
         } catch (IOException ex) {
             return false;
         }
@@ -84,9 +88,9 @@ public class MonitorWriter {
             printMaterialized(schema, "r_regional_area", out);
         }
 
-        if (ageRange != null && tm.getParam("@INDIVIDUAL_TABLE") != null && tm.getParam("@INDIVIDUAL_COLUMN_SEX") != null
-                && tm.getParam("@INDIVIDUAL_VALUE_SEX_MALE") != null && tm.getParam("@INDIVIDUAL_VALUE_SEX_FEMALE") != null
-                && tm.getParam("@INDIVIDUAL_COLUMN_AGE") != null) {
+        if (ageRange != null && tm.hasParam("@INDIVIDUAL_TABLE") && tm.hasParam("@INDIVIDUAL_COLUMN_SEX")
+                && tm.hasParam("@INDIVIDUAL_VALUE_SEX_MALE") && tm.hasParam("@INDIVIDUAL_VALUE_SEX_FEMALE")
+                && tm.hasParam("@INDIVIDUAL_COLUMN_AGE")) {
             out.println("CREATE OR REPLACE VIEW " + schema + ".`r_sex_by_age_group` AS");
             out.print("  SELECT '" + ageRange[0] + " to " + (ageRange[1] - 1) + "' as 'range', a.male, b.female FROM "
                     + "(SELECT COUNT(0) male FROM " + schema + "." + tm.getParam("@INDIVIDUAL_TABLE") + " WHERE " + tm.getParam("@INDIVIDUAL_COLUMN_SEX") + " = " + tm.getParam("@INDIVIDUAL_VALUE_SEX_MALE") + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " >= " + ageRange[0] + " AND " + tm.getParam("@INDIVIDUAL_COLUMN_AGE") + " < " + ageRange[1] + ") a,"
@@ -146,8 +150,8 @@ public class MonitorWriter {
 
         if (ea != null) {
             printAuxTable(tm, tm, "aux_household_returned", "returned", out);
-            printAuxTable(tm, tmListing, "aux_listing_returned", "returned", out);
-            printAuxTable(tm, tmExpected, "aux_household_expected", "expected", out);
+            printAuxTable(tm, (tmListing != null) ? tmListing : tm, "aux_listing_returned", "returned", out);
+            printAuxTable(tm, (tmExpected != null) ? tmExpected : tm, "aux_household_expected", "expected", out);
 
             int upTo = 1;
             for (String name : eaName) {
@@ -155,7 +159,7 @@ public class MonitorWriter {
                 printMaterialized(schema, "r_household_expected_by_" + name.toLowerCase(), out);
             }
 
-            printTotalReport(tm, tmListing, tmExpected, out);
+            printTotalReport(tm, (tmListing != null) ? tmListing : tm, out);
             printMaterialized(schema, "r_total", out);
         }
 
@@ -171,45 +175,36 @@ public class MonitorWriter {
     }
 
     private static void printAuxTable(TemplateManager mainTm, TemplateManager tm, String auxName, String columnName, PrintStream out) {
-        if (tm != null && tm.getEa() != null) {
-            Set<Record> records = new LinkedHashSet<>();
-            List<Item> eaExpected = tm.getEa();
-            out.println("CREATE VIEW " + tm.getDictionary().getSchema() + "." + auxName + " AS");
-            out.println("    SELECT ");
-            for (int i = 0; i < eaExpected.size(); i++) {
-                Item item = eaExpected.get(i);
-                out.println("        " + item.getColunmFullName() + " AS " + mainTm.getEa().get(i).getName() + ",");
-                records.add(item.getRecord());
-            }
-            Record[] recArray = records.toArray(new Record[0]);
-            Item expected = tm.getDictionary().getTaggedItem(Dictionary.TAG_EXPECTED_QUESTIONNAIRES);
-            if (expected == null) {
-                out.println("        COUNT(0) AS `returned`");
-            } else {
-                out.println("        SUM(" + expected.getColunmFullName() + ") AS `expected`");
-            }
-            out.println("    FROM");
-            out.println("        " + recArray[0].getMainRecord().getFullTableName());
-            for (Record record : recArray) {
-                if (!record.isMainRecord()) {
-                    out.println("            JOIN " + record.getFullTableName() + " ON " + record.getMainRecord().getTableName() + ".ID = " + record.getTableName() + "." + record.getMainRecord().getName());
-                }
-            }
-            out.println("    GROUP BY");
-            for (int i = 0; i < eaExpected.size() - 1; i++) {
-                Item item = eaExpected.get(i);
-                out.println("        " + item.getColunmFullName() + ",");
-            }
-            Item item = eaExpected.get(eaExpected.size() - 1);
-            out.println("        " + item.getColunmFullName() + ";");
-        } else {
-            out.println("CREATE VIEW " + tm.getDictionary().getSchema() + ".`aux_household_expected` AS");
-            out.println("    SELECT ");
-            for (Item item : mainTm.getEa()) {
-                out.println("        '" + item.getName() + "' AS `" + item.getName() + "`,");
-            }
-            out.println("        -1 AS `" + columnName + "`;");
+        Set<Record> records = new LinkedHashSet<>();
+        List<Item> eaExpected = tm.getEa();
+        out.println("CREATE VIEW " + tm.getDictionary().getSchema() + "." + auxName + " AS");
+        out.println("    SELECT ");
+        for (int i = 0; i < eaExpected.size(); i++) {
+            Item item = eaExpected.get(i);
+            out.println("        " + item.getColunmFullName() + " AS " + mainTm.getEa().get(i).getName() + ",");
+            records.add(item.getRecord());
         }
+        Record[] recArray = records.toArray(new Record[0]);
+        Item expected = tm.getDictionary().getTaggedItem(Dictionary.TAG_EXPECTED_QUESTIONNAIRES);
+        if (expected == null) {
+            out.println("        COUNT(0) AS `" + columnName + "`");
+        } else {
+            out.println("        SUM(" + expected.getColunmFullName() + ") AS `" + columnName + "`");
+        }
+        out.println("    FROM");
+        out.println("        " + recArray[0].getMainRecord().getFullTableName());
+        for (Record record : recArray) {
+            if (!record.isMainRecord()) {
+                out.println("            JOIN " + record.getFullTableName() + " ON " + record.getMainRecord().getTableName() + ".ID = " + record.getTableName() + "." + record.getMainRecord().getName());
+            }
+        }
+        out.println("    GROUP BY");
+        for (int i = 0; i < eaExpected.size() - 1; i++) {
+            Item item = eaExpected.get(i);
+            out.println("        " + item.getColunmFullName() + ",");
+        }
+        Item item = eaExpected.get(eaExpected.size() - 1);
+        out.println("        " + item.getColunmFullName() + ";");
         out.println();
     }
 
@@ -308,7 +303,7 @@ public class MonitorWriter {
         out.println("            )");
     }
 
-    private static void printTotalReport(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, PrintStream out) {
+    private static void printTotalReport(TemplateManager tm, TemplateManager tmListing, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
 
         out.println("CREATE VIEW `" + schema + "`.`r_total` AS");

@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.12
+ * @version 0.9.16
  */
 public class TemplateManager {
 
@@ -79,7 +79,9 @@ public class TemplateManager {
                 }
             }
             this.params.put("@QUESTIONNAIRE_COLUMN_REGION", ea.get(0).getName());
-            this.params.put("@VALUESET_REGION", eaDescription.get(0));
+            if (eaDescription.get(0) != null && !eaDescription.get(0).isEmpty()) {
+                this.params.put("@VALUESET_REGION", eaDescription.get(0));
+            }
         } else {
             this.ea = null;
             this.eaName = null;
@@ -129,8 +131,16 @@ public class TemplateManager {
         return dictionary;
     }
 
+    public void addParam(String key, String value) {
+        this.params.put(key, value);
+    }
+
     public String getParam(String key) {
         return this.params.get(key);
+    }
+
+    public boolean hasParam(String key) {
+        return this.params.containsKey(key);
     }
 
     public List<Item> getEa() {
