@@ -268,6 +268,15 @@ public class Main {
                     + "CsPro2Sql -e status  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e LU      -p PROPERTIES_FILE -d DELAY [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -v\n"
+                    + "\n"
+                    + "Engines descriptions:\n"
+                    + " - schema: create the sql script for microdata\n"
+                    + " - loader: load microdata into the sql database\n"
+                    + " - monitor: create the sql script to setup the monitoring system\n"
+                    + " - linkage: create the sql script to setup the PES system\n"
+                    + " - update: update the reports of the monitoring system\n"
+                    + " - status: print the loader status\n"
+                    + " - LU: load and update\n"
                     + "\n", options);
             if (errMessage == null) {
                 System.exit(0);
