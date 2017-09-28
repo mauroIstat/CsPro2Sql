@@ -29,7 +29,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.13
+ * @version 0.9.17
  */
 public class SchemaWriter {
 
@@ -37,7 +37,7 @@ public class SchemaWriter {
         TemplateManager tm = new TemplateManager(dictionary);
         String schema = dictionary.getSchema();
 
-        ps.println("CREATE SCHEMA IF NOT EXISTS " + schema + ";");
+        ps.println("CREATE SCHEMA IF NOT EXISTS " + schema + " CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;");
         ps.println();
         ps.println("USE " + schema + ";");
         ps.println();

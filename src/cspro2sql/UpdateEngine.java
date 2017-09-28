@@ -27,7 +27,7 @@ import java.util.Properties;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.12
+ * @version 0.9.17
  */
 public class UpdateEngine {
 
@@ -64,7 +64,7 @@ public class UpdateEngine {
                                 String template = rs.getString(1);
                                 System.out.print("Updating " + template + "... ");
                                 writeDst.executeUpdate("DROP TABLE IF EXISTS " + schema + ".m" + template);
-                                writeDst.executeQuery("SELECT @ID := 0");
+                                writeDst.executeQuery("SELECT 0 INTO @ID");
                                 writeDst.executeUpdate("CREATE TABLE " + schema + ".m" + template + " (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
                                 connDst.commit();
                                 System.out.println("done");

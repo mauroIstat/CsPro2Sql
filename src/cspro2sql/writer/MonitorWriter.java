@@ -28,7 +28,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.16
+ * @version 0.9.17
  */
 public class MonitorWriter {
 
@@ -168,7 +168,7 @@ public class MonitorWriter {
 
     private static void printMaterialized(String schema, String name, PrintStream out) {
         out.println("DROP TABLE IF EXISTS " + schema + ".m" + name + ";");
-        out.println("SELECT @ID := 0;");
+        out.println("SELECT 0 INTO @ID;");
         out.println("CREATE TABLE " + schema + ".m" + name + " (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, " + name + ".* FROM " + schema + "." + name + ";");
         out.println("INSERT INTO " + schema + ".`cspro2sql_report` VALUES ('" + name + "');");
         out.println();
@@ -216,11 +216,11 @@ public class MonitorWriter {
 
         out.println("CREATE VIEW `" + reportName + "` AS");
         out.println("    SELECT ");
-        out.print("        '" + eaName.get(0));
+        out.print("        _utf8mb4 '" + eaName.get(0));
         for (int i = 1; i < upTo; i++) {
             out.print("#" + eaName.get(i));
         }
-        out.println("' AS `name`,");
+        out.println("' COLLATE utf8mb4_unicode_ci AS `name`,");
         out.println("        NULL AS `field`,");
         out.println("        NULL AS `freshlist`,");
         out.println("        NULL AS `expected`,");
