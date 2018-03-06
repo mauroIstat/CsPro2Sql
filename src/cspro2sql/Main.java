@@ -36,7 +36,7 @@ import org.apache.commons.cli.ParseException;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.17
+ * @version 0.9.17.1
  */
 public class Main {
 
@@ -80,8 +80,6 @@ public class Main {
             error = !UpdateEngine.execute(opts.prop);
         } else if (opts.statusEngine) {
             error = !StatusEngine.execute(dictionaries, opts.prop);
-        } else if (opts.linkageEngine) {
-            //error = !LinkageEngine.execute(dictionary, pesDictionary, opts.prop, opts.ps);
         } else if (opts.loadAndUpdate) {
             while (true) {
                 try {
@@ -112,7 +110,7 @@ public class Main {
         options.addOption("a", "all", false, "transfer all the questionnaires");
         options.addOption("cc", "check-constraints", false, "perform constraints check");
         options.addOption("co", "check-only", false, "perform only constraints check (no data transfer)");
-        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status|linkage]");
+        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status]");
         options.addOption("f", "force", false, "skip check of loader multiple running instances");
         options.addOption("fk", "foreign-keys", false, "create foreign keys to value sets");
         options.addOption("h", "help", false, "display this help");
@@ -189,9 +187,6 @@ public class Main {
                 case "status":
                     opts.statusEngine = true;
                     break;
-                case "linkage":
-                    opts.linkageEngine = true;
-                    break;
                 default:
                     opts.printHelp("Wrong engine type!");
                     break;
@@ -228,7 +223,6 @@ public class Main {
         boolean monitorEngine;
         boolean updateEngine;
         boolean statusEngine;
-        boolean linkageEngine;
         boolean loadAndUpdate;
         boolean allRecords;
         boolean foreignKeys;
@@ -263,7 +257,6 @@ public class Main {
                     + "CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE] [-d DELAY]\n"
                     + "CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
-                    + "CsPro2Sql -e linkage -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e update  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e status  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e LU      -p PROPERTIES_FILE -d DELAY [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE]\n"
@@ -273,7 +266,6 @@ public class Main {
                     + " - schema: create the sql script for microdata\n"
                     + " - loader: load microdata into the sql database\n"
                     + " - monitor: create the sql script to setup the monitoring system\n"
-                    + " - linkage: create the sql script to setup the PES system\n"
                     + " - update: update the reports of the monitoring system\n"
                     + " - status: print the loader status\n"
                     + " - LU: load and update\n"

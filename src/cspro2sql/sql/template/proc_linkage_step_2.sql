@@ -1,7 +1,0 @@
-DELIMITER ;;
-CREATE PROCEDURE @SCHEMA.`proc_linkage_step_2`()
-BEGIN
-
-END ;;
-DELIMITER ;
-
