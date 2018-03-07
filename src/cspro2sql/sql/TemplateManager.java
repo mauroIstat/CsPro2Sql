@@ -4,14 +4,13 @@ import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.Tag;
+import cspro2sql.bean.Territory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -33,7 +32,7 @@ import java.util.regex.Pattern;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.16
+ * @version 0.9.18
  */
 public class TemplateManager {
 
@@ -41,10 +40,8 @@ public class TemplateManager {
 
     private final Dictionary dictionary;
     private final Map<String, String> params;
-    private final List<Item> ea;
-    private final List<String> eaName;
-    private final List<String> eaDescription;
     private final int[] ageRange;
+    private Territory territory;
 
     public TemplateManager(Dictionary dictionary) {
         this.dictionary = dictionary;
@@ -57,35 +54,18 @@ public class TemplateManager {
         this.params.put("@QUESTIONNAIRE_TABLE", mainRecord.getTableName());
         this.params.put("@QUESTIONNAIRE_COLUMN_BASE", mainRecord.getName());
 
+        this.territory = new Territory();
         if (dictionary.hasTagged(Dictionary.TAG_TERRITORY)) {
             Iterable<Item> territories = dictionary.getTaggedItems(Dictionary.TAG_TERRITORY);
-            this.ea = new ArrayList<>();
-            this.eaName = new ArrayList<>();
-            this.eaDescription = new ArrayList<>();
             for (Item territory : territories) {
-                this.ea.add(territory);
-                Tag tag = territory.getTag(Dictionary.TAG_TERRITORY);
-                if (tag.getValue() != null) {
-                    String[] tagValues = tag.getValue().split(",");
-                    this.eaName.add(tagValues[0]);
-                    if (tagValues.length > 1 && !tagValues[1].isEmpty()) {
-                        this.eaDescription.add(mainRecord.getValueSetPrefix() + tagValues[1]);
-                    } else {
-                        this.eaDescription.add("");
-                    }
-                } else {
-                    this.eaName.add("");
-                    this.eaDescription.add("");
-                }
+                this.territory.addItem(territory);
             }
+            /* TODO
             this.params.put("@QUESTIONNAIRE_COLUMN_REGION", ea.get(0).getName());
             if (eaDescription.get(0) != null && !eaDescription.get(0).isEmpty()) {
                 this.params.put("@VALUESET_REGION", eaDescription.get(0));
             }
-        } else {
-            this.ea = null;
-            this.eaName = null;
-            this.eaDescription = null;
+             */
         }
 
         if (dictionary.hasTagged(Dictionary.TAG_AGE)) {
@@ -143,16 +123,12 @@ public class TemplateManager {
         return this.params.containsKey(key);
     }
 
-    public List<Item> getEa() {
-        return ea;
+    public Territory getTerritory() {
+        return territory;
     }
 
-    public List<String> getEaName() {
-        return eaName;
-    }
-
-    public List<String> getEaDescription() {
-        return eaDescription;
+    public void setTerritory(Territory territory) {
+        this.territory = territory;
     }
 
     public int[] getAgeRange() {

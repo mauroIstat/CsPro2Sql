@@ -3,11 +3,12 @@ package cspro2sql.writer;
 import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
+import cspro2sql.bean.Territory;
+import cspro2sql.bean.TerritoryItem;
 import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -28,7 +29,7 @@ import java.util.Set;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.17
+ * @version 0.9.18
  */
 public class MonitorWriter {
 
@@ -40,6 +41,8 @@ public class MonitorWriter {
         "r_sex_by_region"
     };
 
+    private static int reportCount = 0;
+
     public static boolean write(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
 
@@ -49,9 +52,7 @@ public class MonitorWriter {
         out.println("USE " + schema + ";");
         out.println();
 
-        List<Item> ea = tm.getEa();
-        List<String> eaName = tm.getEaName();
-        List<String> eaDescription = tm.getEaDescription();
+        Territory territory = tm.getTerritory();
         int[] ageRange = tm.getAgeRange();
 
         try {
@@ -72,14 +73,16 @@ public class MonitorWriter {
             return false;
         }
 
-        if (ea != null) {
+        if (!territory.isEmpty()) {
+            TerritoryItem territoryItem = territory.getFirst();
             out.println("CREATE OR REPLACE VIEW " + schema + ".`r_regional_area` AS");
-            String groupBy = ea.get(0).getName();
-            String name = eaName.get(0);
+            String groupBy = territoryItem.getItemName();
+            String name = territoryItem.getName();
             out.print("  SELECT '" + name + "' name, COUNT(0) value FROM (SELECT COUNT(0) FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " GROUP BY " + groupBy + ") a0");
-            for (int i = 1; i < ea.size(); i++) {
-                name = eaName.get(i);
-                groupBy += "," + ea.get(i).getName();
+            for (int i = 1; i < territory.size(); i++) {
+                territoryItem = territory.get(i);
+                name = territoryItem.getName();
+                groupBy += "," + territoryItem.getItemName();
                 out.println(" UNION");
                 out.print("  SELECT '" + name + "', COUNT(0) FROM (SELECT COUNT(0) FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " GROUP BY " + groupBy + ") a" + i);
             }
@@ -110,53 +113,47 @@ public class MonitorWriter {
             printMaterialized(schema, "r_sex_by_age_group", out);
         }
 
-        if (ea != null) {
+        if (!territory.isEmpty()) {
+            TerritoryItem territoryItem = territory.getFirst();
             out.println("CREATE OR REPLACE VIEW " + schema + ".`r_household_by_ea` AS");
             out.print("  SELECT concat(");
-            out.print("'" + eaName.get(0) + "'");
-            for (int i = 1; i < eaName.size(); i++) {
-                out.print(",'#','" + eaName.get(i) + "'");
+            out.print("'" + territoryItem.getName() + "'");
+            for (int i = 1; i < territory.size(); i++) {
+                territoryItem = territory.get(i);
+                out.print(",'#','" + territoryItem.getName() + "'");
             }
             out.println(") as name, null as household");
             out.println("  UNION");
             out.print("  SELECT concat(");
-            if (eaDescription.get(0) == null || eaDescription.get(0).isEmpty()) {
-                out.print("h." + ea.get(0).getName());
-            } else {
-                out.print("vs0.value");
-            }
-            for (int i = 1; i < ea.size(); i++) {
-                if (eaDescription.get(i) == null || eaDescription.get(i).isEmpty()) {
-                    out.print(",'#',h." + ea.get(i).getName());
-                } else {
-                    out.print(",'#',vs" + i + ".value");
-                }
+            territoryItem = territory.getFirst();
+            out.print(territoryItem.selectDescription());
+            for (int i = 1; i < territory.size(); i++) {
+                territoryItem = territory.get(i);
+                out.print(",'#'," + territoryItem.selectDescription());
             }
             out.println(") as name, COUNT(0) AS `household`");
             out.println("  FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " `h`");
-            for (int i = 0; i < ea.size(); i++) {
-                if (eaDescription.get(i) != null && !eaDescription.get(i).isEmpty()) {
-                    out.println("    JOIN " + schema + "." + eaDescription.get(i) + " vs" + i + " ON `h`.`" + ea.get(i).getName() + "` = vs" + i + ".`ID`");
-                }
-            }
             out.print("  GROUP BY ");
-            out.print("`h`." + ea.get(0).getName());
-            for (int i = 1; i < ea.size(); i++) {
-                out.print(", `h`." + ea.get(i).getName());
+            territoryItem = territory.getFirst();
+            out.print("`h`." + territoryItem.getItemName());
+            for (int i = 1; i < territory.size(); i++) {
+                territoryItem = territory.get(i);
+                out.print(", `h`." + territoryItem.getItemName());
             }
             out.println(";");
             printMaterialized(schema, "r_household_by_ea", out);
         }
 
-        if (ea != null) {
+        if (!territory.isEmpty()) {
             printAuxTable(tm, tm, "aux_household_returned", "returned", out);
             printAuxTable(tm, (tmListing != null) ? tmListing : tm, "aux_listing_returned", "returned", out);
             printAuxTable(tm, (tmExpected != null) ? tmExpected : tm, "aux_household_expected", "expected", out);
 
             int upTo = 1;
-            for (String name : eaName) {
-                printExpectedReport(tm, "r_household_expected_by_" + name.toLowerCase(), upTo++, out);
-                printMaterialized(schema, "r_household_expected_by_" + name.toLowerCase(), out);
+            for (int i = 0; i < territory.size(); i++) {
+                TerritoryItem territoryItem = territory.get(i);
+                printExpectedReport(tm, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), upTo++, out);
+                printMaterialized(schema, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), out);
             }
 
             printTotalReport(tm, (tmListing != null) ? tmListing : tm, out);
@@ -170,18 +167,21 @@ public class MonitorWriter {
         out.println("DROP TABLE IF EXISTS " + schema + ".m" + name + ";");
         out.println("SELECT 0 INTO @ID;");
         out.println("CREATE TABLE " + schema + ".m" + name + " (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, " + name + ".* FROM " + schema + "." + name + ";");
-        out.println("INSERT INTO " + schema + ".`cspro2sql_report` VALUES ('" + name + "');");
+        out.println("INSERT INTO " + schema + ".`cspro2sql_report` VALUES ('" + name + "', " + (reportCount++) + ");");
         out.println();
     }
 
     private static void printAuxTable(TemplateManager mainTm, TemplateManager tm, String auxName, String columnName, PrintStream out) {
         Set<Record> records = new LinkedHashSet<>();
-        List<Item> eaExpected = tm.getEa();
-        out.println("CREATE VIEW " + tm.getDictionary().getSchema() + "." + auxName + " AS");
+        Territory territory = tm.getTerritory();
+        Territory mainTerritory = mainTm.getTerritory();
+        out.println("CREATE OR REPLACE VIEW " + tm.getDictionary().getSchema() + "." + auxName + " AS");
         out.println("    SELECT ");
-        for (int i = 0; i < eaExpected.size(); i++) {
-            Item item = eaExpected.get(i);
-            out.println("        " + item.getColunmFullName() + " AS " + mainTm.getEa().get(i).getName() + ",");
+        for (int i = 0; i < territory.size(); i++) {
+            TerritoryItem territoryItem = territory.get(i);
+            TerritoryItem mainTerritoryItem = mainTerritory.get(i);
+            Item item = territoryItem.getItem();
+            out.println("        " + item.getColunmFullName() + " AS " + mainTerritoryItem.getItemName() + ",");
             records.add(item.getRecord());
         }
         Record[] recArray = records.toArray(new Record[0]);
@@ -199,28 +199,29 @@ public class MonitorWriter {
             }
         }
         out.println("    GROUP BY");
-        for (int i = 0; i < eaExpected.size() - 1; i++) {
-            Item item = eaExpected.get(i);
+        for (int i = 0; i < territory.size() - 1; i++) {
+            Item item = territory.get(i).getItem();
             out.println("        " + item.getColunmFullName() + ",");
         }
-        Item item = eaExpected.get(eaExpected.size() - 1);
+        Item item = territory.get(territory.size() - 1).getItem();
         out.println("        " + item.getColunmFullName() + ";");
         out.println();
     }
 
     private static void printExpectedReport(TemplateManager tm, String reportName, int upTo, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
-        List<Item> ea = tm.getEa();
-        List<String> eaName = tm.getEaName();
-        List<String> eaDescription = tm.getEaDescription();
+        Territory territory = tm.getTerritory();
 
-        out.println("CREATE VIEW `" + reportName + "` AS");
+        out.println("CREATE OR REPLACE VIEW " + schema + ".`" + reportName + "` AS");
         out.println("    SELECT ");
-        out.print("        _utf8mb4 '" + eaName.get(0));
+        out.print("        _utf8mb4 '" + territory.getFirst().getName());
         for (int i = 1; i < upTo; i++) {
-            out.print("#" + eaName.get(i));
+            out.print("#" + territory.get(i).getName());
         }
         out.println("' COLLATE utf8mb4_unicode_ci AS `name`,");
+        for (int i = 0; i < upTo; i++) {
+            out.println("        NULL AS `" + territory.get(i).getItemName() + "`,");
+        }
         out.println("        NULL AS `field`,");
         out.println("        NULL AS `freshlist`,");
         out.println("        NULL AS `expected`,");
@@ -230,21 +231,16 @@ public class MonitorWriter {
         out.println("    ");
         out.println("    UNION SELECT ");
         out.print("        CONCAT(");
-        int vsCounter = 0;
-        if (eaDescription.get(0) != null && !eaDescription.get(0).isEmpty()) {
-            out.print("`vs" + (vsCounter++) + "`.`value`");
-        } else {
-            out.print("`h`.`" + ea.get(0).getName() + "`");
-        }
+        TerritoryItem territoryItem = territory.getFirst();
+        out.print(territoryItem.selectDescription());
         for (int i = 1; i < upTo; i++) {
-            Item item = ea.get(i);
-            if (eaDescription.get(i) != null && !eaDescription.get(i).isEmpty()) {
-                out.print(",'#',`vs" + (vsCounter++) + "`.`value`");
-            } else {
-                out.print(",'#',`h`.`" + item.getName() + "`");
-            }
+            territoryItem = territory.get(i);
+            out.print(",'#'," + territoryItem.selectDescription());
         }
         out.println(") AS `name`,");
+        for (int i = 0; i < upTo; i++) {
+            out.println("        `h`." + territory.get(i).getItemName() + " AS `" + territory.get(i).getItemName() + "`,");
+        }
         out.println("        SUM(`h`.`returned`) AS `returned`,");
         out.println("        SUM(`l`.`returned`) AS `returned`,");
         out.println("        SUM(`e`.`expected`) AS `expected`,");
@@ -254,29 +250,23 @@ public class MonitorWriter {
         out.println("    FROM");
         printSubTable(tm, "aux_household_returned", "returned", upTo, out);
         out.println("        `h`");
-        vsCounter = 0;
-        for (int i = 0; i < upTo; i++) {
-            Item item = ea.get(i);
-            if (eaDescription.get(i) != null && !eaDescription.get(i).isEmpty()) {
-                String vs = "`vs" + (vsCounter++) + "`";
-                out.println("        JOIN " + schema + "." + eaDescription.get(i) + " " + vs + " ON " + vs + ".`id` = `h`.`" + item.getName() + "`");
-            }
-        }
         out.println("        JOIN ");
         printSubTable(tm, "aux_listing_returned", "returned", upTo, out);
         out.println("            `l` ON");
-        out.println("            (`h`.`" + ea.get(0).getName() + "` = `l`.`" + ea.get(0).getName() + "`)");
+        territoryItem = territory.getFirst();
+        out.println("            (`h`.`" + territoryItem.getItemName() + "` = `l`.`" + territoryItem.getItemName() + "`)");
         for (int i = 1; i < upTo; i++) {
-            Item item = ea.get(i);
-            out.println("            AND (`h`.`" + item.getName() + "` = `l`.`" + item.getName() + "`)");
+            territoryItem = territory.get(i);
+            out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `l`.`" + territoryItem.getItemName() + "`)");
         }
         out.println("        JOIN");
         printSubTable(tm, "aux_household_expected", "expected", upTo, out);
         out.println("        `e` ON");
-        out.println("            (`h`.`" + ea.get(0).getName() + "` = `e`.`" + ea.get(0).getName() + "`)");
+        territoryItem = territory.getFirst();
+        out.println("            (`h`.`" + territoryItem.getItemName() + "` = `e`.`" + territoryItem.getItemName() + "`)");
         for (int i = 1; i < upTo; i++) {
-            Item item = ea.get(i);
-            out.println("            AND (`h`.`" + item.getName() + "` = `e`.`" + item.getName() + "`)");
+            territoryItem = territory.get(i);
+            out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `e`.`" + territoryItem.getItemName() + "`)");
         }
         out.println("            GROUP BY `name`;");
         out.println();
@@ -284,20 +274,21 @@ public class MonitorWriter {
 
     private static void printSubTable(TemplateManager tm, String tableName, String columnName, int upTo, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
-        List<Item> ea = tm.getEa();
+        Territory territory = tm.getTerritory();
 
         out.println("        (SELECT");
-        for (int i = 0; i < upTo && i < ea.size(); i++) {
-            Item item = ea.get(i);
+        for (int i = 0; i < upTo && i < territory.size(); i++) {
+            TerritoryItem territoryItem = territory.get(i);
+            Item item = territoryItem.getItem();
             out.println("                `" + tableName + "`." + item.getName() + " AS " + item.getName() + ",");
         }
         out.println("            SUM(`" + tableName + "`.`" + columnName + "`) AS `" + columnName + "`");
         out.println("            FROM `" + schema + "`.`" + tableName + "`");
         out.println("            GROUP BY");
-        out.print("                `" + tableName + "`." + ea.get(0).getName());
-        for (int i = 0; i < upTo && i < ea.size(); i++) {
-            Item item = ea.get(i);
-            out.print(",\n                `" + tableName + "`." + item.getName());
+        out.print("                `" + tableName + "`." + territory.getFirst().getItemName());
+        for (int i = 0; i < upTo && i < territory.size(); i++) {
+            TerritoryItem territoryItem = territory.get(i);
+            out.print(",\n                `" + tableName + "`." + territoryItem.getItemName());
         }
         out.println();
         out.println("            )");
@@ -306,7 +297,7 @@ public class MonitorWriter {
     private static void printTotalReport(TemplateManager tm, TemplateManager tmListing, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
 
-        out.println("CREATE VIEW `" + schema + "`.`r_total` AS");
+        out.println("CREATE OR REPLACE VIEW `" + schema + "`.`r_total` AS");
         out.println("    SELECT ");
         out.println("        (SELECT ");
         out.println("                COUNT(0)");
