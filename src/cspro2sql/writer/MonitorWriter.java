@@ -37,8 +37,7 @@ public class MonitorWriter {
         "r_questionnaire_info",
         "r_individual_info",
         "r_religion",
-        "r_sex_by_age",
-        "r_sex_by_region"
+        "r_sex_by_age"
     };
 
     private static int reportCount = 0;

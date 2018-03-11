@@ -60,12 +60,6 @@ public class TemplateManager {
             for (Item territory : territories) {
                 this.territory.addItem(territory);
             }
-            /* TODO
-            this.params.put("@QUESTIONNAIRE_COLUMN_REGION", ea.get(0).getName());
-            if (eaDescription.get(0) != null && !eaDescription.get(0).isEmpty()) {
-                this.params.put("@VALUESET_REGION", eaDescription.get(0));
-            }
-             */
         }
 
         if (dictionary.hasTagged(Dictionary.TAG_AGE)) {
