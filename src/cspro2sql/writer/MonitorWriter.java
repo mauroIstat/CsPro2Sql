@@ -286,7 +286,11 @@ public class MonitorWriter {
             territoryItem = territory.get(i);
             out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `e`.`" + territoryItem.getItemName() + "`)");
         }
-        out.println("            GROUP BY `name`;");
+        out.print("    GROUP BY `name`");
+        for (int i = 0; i < upTo; i++) {
+            out.print(", `h`.`" + territory.get(i).getItemName() + "`");
+        }
+        out.println(";");
         out.println();
     }
 
