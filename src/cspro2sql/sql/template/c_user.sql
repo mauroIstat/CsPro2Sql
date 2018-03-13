@@ -14,5 +14,7 @@ CREATE TABLE IF NOT EXISTS @SCHEMA.`c_user` (
 INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD, ROLE)
   VALUES ('Dashboard', 'Admin', 'admin@dashboard.it', '$2a$10$Yq.aC1NrfpC/grRBlc8dU.QgWG4bMvj3goJayS4DwypWXcrrHe756', 'ADMIN');
 INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD, ROLE)
-  VALUES ('Dashboard', 'Guest', 'guest@dashboard.it', '$2a$10$Yq.aC1NrfpC/grRBlc8dU.QgWG4bMvj3goJayS4DwypWXcrrHe756', 'GUEST');
+  VALUES ('Dashboard', 'Progress', 'progress@dashboard.it', '$2a$10$Yq.aC1NrfpC/grRBlc8dU.QgWG4bMvj3goJayS4DwypWXcrrHe756', 'PROGRESS');
+INSERT INTO @SCHEMA.`c_user` (FIRSTNAME, LASTNAME, EMAIL, PASSWORD, ROLE)
+  VALUES ('Dashboard', 'Analyst', 'analyst@dashboard.it', '$2a$10$Yq.aC1NrfpC/grRBlc8dU.QgWG4bMvj3goJayS4DwypWXcrrHe756', 'ANALYST');
 
