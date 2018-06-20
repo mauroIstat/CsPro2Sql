@@ -44,7 +44,7 @@ import java.util.logging.Logger;
  *
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
- * @version 0.9.12
+ * @version 0.9.18.2
  */
 public class LoaderEngine {
 
@@ -106,7 +106,7 @@ public class LoaderEngine {
                         } else {
                             firstGuid = null;
                             try (Statement stmt = connSrc.createStatement()) {
-                                try (ResultSet r = stmt.executeQuery("select max(revision) from " + srcSchema + "." + srcDataTable)) {
+                                try (ResultSet r = stmt.executeQuery("select max(revision) from `" + srcSchema + "`." + srcDataTable)) {
                                     r.next();
                                     nextRevision = r.getInt(1);
                                 }
@@ -122,23 +122,23 @@ public class LoaderEngine {
                         ResultSet result;
                         PreparedStatement selectQuestionnaire;
                         if (allRecords) {
-                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " order by guid limit " + MAX_COMMIT_SIZE);
+                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from `" + srcSchema + "`." + srcDataTable + " order by guid limit " + MAX_COMMIT_SIZE);
                             result = selectQuestionnaire.executeQuery();
-                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " where guid > ? order by guid limit " + MAX_COMMIT_SIZE);
+                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from `" + srcSchema + "`." + srcDataTable + " where guid > ? order by guid limit " + MAX_COMMIT_SIZE);
                             System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro/" + dictionary.getName() + " to MySql... [all records]");
                         } else {
                             if (firstGuid == null) {
-                                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " where revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
+                                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from `" + srcSchema + "`." + srcDataTable + " where revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                                 selectQuestionnaire.setInt(1, lastRevision);
                                 selectQuestionnaire.setInt(2, nextRevision);
                             } else {
-                                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
+                                selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from `" + srcSchema + "`." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                                 selectQuestionnaire.setBytes(1, firstGuid);
                                 selectQuestionnaire.setInt(2, lastRevision);
                                 selectQuestionnaire.setInt(3, nextRevision);
                             }
                             result = selectQuestionnaire.executeQuery();
-                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from " + srcSchema + "." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
+                            selectQuestionnaire = connSrc.prepareStatement("select questionnaire, guid, deleted from `" + srcSchema + "`." + srcDataTable + " where guid > ? AND revision > ? AND revision <= ? order by guid limit " + MAX_COMMIT_SIZE);
                             selectQuestionnaire.setInt(2, lastRevision);
                             selectQuestionnaire.setInt(3, nextRevision);
                             System.out.println(SDF.format(new Date(System.currentTimeMillis())) + " Starting data transfer from CsPro/" + dictionary.getName() + " to MySql... [" + lastRevision + " -> " + nextRevision + "]");
