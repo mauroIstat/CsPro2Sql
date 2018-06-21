@@ -75,7 +75,7 @@ public class Main {
                 }
             }
         } else if (opts.monitorEngine) {
-            error = !MonitorEngine.execute(dictionaries, opts.ps);
+            error = !MonitorEngine.execute(dictionaries, opts.prop, opts.ps);
         } else if (opts.updateEngine) {
             error = !UpdateEngine.execute(opts.prop);
         } else if (opts.statusEngine) {

@@ -44,13 +44,13 @@ public class MonitorEngine {
                     prop.getProperty("db.dest.schema"),
                     prop.getProperty("dictionary"),
                     prop.getProperty("dictionary.prefix"));
-            execute(dictionaries, System.out);
+            execute(dictionaries, prop, System.out);
         } catch (Exception ex) {
             System.exit(1);
         }
     }
 
-    static boolean execute(List<Dictionary> dictionaries, PrintStream out) {
+    static boolean execute(List<Dictionary> dictionaries, Properties prop, PrintStream out) {
         TemplateManager tmFieldwork = null, tmListing = null, tmExpected = null;
         for (Dictionary dictionary : dictionaries) {
             if (dictionary.hasTag(Dictionary.TAG_FIELDWORK)) {
@@ -61,7 +61,9 @@ public class MonitorEngine {
                 tmExpected = new TemplateManager(dictionary);
             }
         }
-        return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, out);
+               
+        boolean gisEnabled = prop.getProperty("gis.enabled") != null && (prop.getProperty("gis.enabled").equalsIgnoreCase("true") || prop.getProperty("gis.enabled").equals("1"));
+        return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, gisEnabled ,out);
     }
 
 }

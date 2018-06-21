@@ -42,12 +42,13 @@ public class MonitorWriter {
 
     private static int reportCount = 0;
 
-    public static boolean write(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, PrintStream out) {
+    public static boolean write(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, boolean gisEnabled, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
 
         tm.addParam("@LISTING", tmListing == null ? "0" : "1");
         tm.addParam("@EXPECTED", tmExpected == null ? "0" : "1");
-
+        tm.addParam("@GIS", gisEnabled ? "1" : "0");
+        
         out.println("USE " + schema + ";");
         out.println();
 
