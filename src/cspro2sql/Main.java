@@ -1,6 +1,8 @@
 package cspro2sql;
 
+import cspro2sql.bean.AreaNameFile;
 import cspro2sql.bean.Dictionary;
+import cspro2sql.reader.AreaNameFileReader;
 import cspro2sql.reader.DictionaryReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -46,15 +48,20 @@ public class Main {
         CsPro2SqlOptions opts = getCommandLineOptions(args);
         boolean error = false;
         List<Dictionary> dictionaries;
+        AreaNameFile areaNames = null;
         try {
             dictionaries = DictionaryReader.parseDictionaries(opts.schema, opts.dictionary, opts.tablePrefix);
+            
+            if (opts.prop.getProperty("geography") != null)
+                areaNames = AreaNameFileReader.parseAreaNamesFile(opts.prop.getProperty("geography"));
+            
         } catch (Exception e) {
             opts.ps.close();
             opts.printHelp(e.getMessage());
             System.exit(1);
             return;
         }
-
+ 
         if (opts.schemaEngine) {
             error = !SchemaEngine.execute(dictionaries, opts.foreignKeys, opts.ps);
         } else if (opts.loaderEngine) {
@@ -75,7 +82,7 @@ public class Main {
                 }
             }
         } else if (opts.monitorEngine) {
-            error = !MonitorEngine.execute(dictionaries, opts.prop, opts.ps);
+            error = !MonitorEngine.execute(dictionaries, areaNames, opts.prop, opts.ps);
         } else if (opts.updateEngine) {
             error = !UpdateEngine.execute(opts.prop);
         } else if (opts.statusEngine) {

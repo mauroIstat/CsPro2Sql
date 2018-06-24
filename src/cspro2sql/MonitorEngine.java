@@ -1,6 +1,8 @@
 package cspro2sql;
 
+import cspro2sql.bean.AreaNameFile;
 import cspro2sql.bean.Dictionary;
+import cspro2sql.reader.AreaNameFileReader;
 import cspro2sql.reader.DictionaryReader;
 import cspro2sql.sql.TemplateManager;
 import cspro2sql.writer.MonitorWriter;
@@ -44,13 +46,17 @@ public class MonitorEngine {
                     prop.getProperty("db.dest.schema"),
                     prop.getProperty("dictionary"),
                     prop.getProperty("dictionary.prefix"));
-            execute(dictionaries, prop, System.out);
+            
+            final AreaNameFile areaNames = prop.getProperty("geography") != null
+                    ? AreaNameFileReader.parseAreaNamesFile(prop.getProperty("geography"))
+                    : null;
+            execute(dictionaries, areaNames, prop, System.out);
         } catch (Exception ex) {
             System.exit(1);
         }
     }
 
-    static boolean execute(List<Dictionary> dictionaries, Properties prop, PrintStream out) {
+    static boolean execute(List<Dictionary> dictionaries, AreaNameFile areaNames, Properties prop, PrintStream out) {
         TemplateManager tmFieldwork = null, tmListing = null, tmExpected = null;
         for (Dictionary dictionary : dictionaries) {
             if (dictionary.hasTag(Dictionary.TAG_FIELDWORK)) {
@@ -63,7 +69,7 @@ public class MonitorEngine {
         }
                
         boolean gisEnabled = prop.getProperty("gis.enabled") != null && (prop.getProperty("gis.enabled").equalsIgnoreCase("true") || prop.getProperty("gis.enabled").equals("1"));
-        return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, gisEnabled ,out);
+        return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, areaNames, gisEnabled ,out);
     }
 
 }

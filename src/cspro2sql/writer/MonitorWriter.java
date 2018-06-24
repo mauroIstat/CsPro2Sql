@@ -1,14 +1,18 @@
 package cspro2sql.writer;
 
+import cspro2sql.bean.AreaNameFile;
 import cspro2sql.bean.Dictionary;
 import cspro2sql.bean.Item;
+import cspro2sql.bean.NamedArea;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.Territory;
 import cspro2sql.bean.TerritoryItem;
 import cspro2sql.sql.TemplateManager;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Formatter;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -42,7 +46,7 @@ public class MonitorWriter {
 
     private static int reportCount = 0;
 
-    public static boolean write(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, boolean gisEnabled, PrintStream out) {
+    public static boolean write(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, AreaNameFile areaNames, boolean gisEnabled, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
 
         tm.addParam("@LISTING", tmListing == null ? "0" : "1");
@@ -74,22 +78,12 @@ public class MonitorWriter {
         }
 
         if (!territory.isEmpty()) {
-            out.println("CREATE TABLE IF NOT EXISTS `territory` (");
-            String idx = "";
-            for (int i = 0; i < territory.size(); i++) {
-                TerritoryItem territoryItem = territory.get(i);
-                String name = territoryItem.getItemName();
-                out.println("    `" + name + "_NAME` text COLLATE utf8mb4_unicode_ci,");
-                out.println("    `" + name + "` int(11) DEFAULT NULL,");
-                if (i > 0) {
-                    idx += ",";
-                }
-                idx += "`" + name + "`";
+            try {
+                printTerritoryTable(territory, areaNames, out);
+            } catch (IOException ex) {
+                System.err.println(ex.getMessage());
+                return false;
             }
-            out.println("    `TERRITORY_CODE` text COLLATE utf8mb4_unicode_ci,");
-            out.println("    KEY `idx_territory` (" + idx + ")");
-            out.println(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-            out.println();
         }
 
         if (!territory.isEmpty()) {
@@ -178,8 +172,80 @@ public class MonitorWriter {
             printTotalReport(tm, (tmListing != null) ? tmListing : tm, out);
             printMaterialized(schema, "r_total", out);
         }
-
+                
         return true;
+    }
+
+    private static void printTerritoryTable(Territory territory, AreaNameFile areaNames, PrintStream out) throws IOException {
+        out.println("CREATE TABLE IF NOT EXISTS `territory` (");
+        String idx = "";
+        for (int i = 0; i < territory.size(); i++) {
+            TerritoryItem territoryItem = territory.get(i);
+            String name = territoryItem.getItemName();
+            out.println("    `" + name + "_NAME` text COLLATE utf8mb4_unicode_ci,");
+            out.println("    `" + name + "` int(11) DEFAULT NULL,");
+            if (i > 0) {
+                idx += ",";
+            }
+            idx += "`" + name + "`";
+        }
+        out.println("    `TERRITORY_CODE` text COLLATE utf8mb4_unicode_ci,");
+        out.println("    KEY `idx_territory` (" + idx + ")");
+        out.println(") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+        out.println();
+        
+        if (areaNames != null) {
+            final int numLevels = areaNames.getLevels().length;
+            if (territory.size() != numLevels) {
+                throw new IOException("Area names file does not match #territory items in dictionary");
+            }
+            
+            StringBuilder insertPreambleBuilder = new StringBuilder();
+            insertPreambleBuilder.append("INSERT INTO `territory` (");
+            for (int i = 0; i < territory.size(); i++) {
+                TerritoryItem territoryItem = territory.get(i);
+                String name = territoryItem.getItemName();
+                insertPreambleBuilder.append("`");
+                insertPreambleBuilder.append(name);
+                insertPreambleBuilder.append("_NAME`,`");
+                insertPreambleBuilder.append(name);
+                insertPreambleBuilder.append("`");
+                if (i != territory.size() - 1)
+                    insertPreambleBuilder.append(",");
+            }
+            insertPreambleBuilder.append(",`TERRITORY_CODE`) VALUES (");
+            final String insertPreamble = insertPreambleBuilder.toString();
+            String[] formatSpecs = new String[numLevels];
+            for (int i = 0; i < numLevels; i++) {
+                Item territoryDictItem = territory.get(i).getItem();
+                if (territoryDictItem.isZeroFill())
+                    formatSpecs[i] = "%0" + territoryDictItem.getLength() + "d";
+                else
+                    formatSpecs[i] = "%" + territoryDictItem.getLength() + "d";
+            }
+            for (NamedArea area : areaNames.getAreas()) {
+                
+                // Ignore higher level entities (province, district)
+                // only insert lowest level entities (EA)
+                if (area.level() == numLevels) {
+                    out.print(insertPreamble);
+                    for (int i = 0; i < numLevels - 1; i++) {
+                        List<Integer> ancestorCode = area.getCodes().subList(0, i + 1);
+                        NamedArea ancestor = areaNames.lookup(ancestorCode);
+                        String ancestorName = ancestor != null ? ancestor.getName().replace("'", "''") : String.valueOf(area.getCodes().get(i));
+                        out.print("'" + ancestorName + "'," + area.getCodes().get(i) +  ",");
+                    }
+                    
+                    StringBuilder fullCodeBuilder = new StringBuilder();
+                    Formatter fmt = new Formatter(fullCodeBuilder);
+                    for (int i = 0; i < numLevels; i++) {
+                        fmt.format(formatSpecs[i], area.getCodes().get(i));
+                    }
+                    
+                    out.println("'" + area.getName() + "'," + area.getCodes().get(numLevels - 1) +  ",'" + fullCodeBuilder.toString() + "');");
+                }
+            }
+        }
     }
 
     private static void printMaterialized(String schema, String name, PrintStream out) {
