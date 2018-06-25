@@ -41,7 +41,8 @@ public class MonitorWriter {
         "r_questionnaire_info",
         "r_individual_info",
         "r_religion",
-        "r_sex_by_age"
+        "r_sex_by_age",
+        "r_first_level_geography"
     };
 
     private static int reportCount = 0;
@@ -59,6 +60,16 @@ public class MonitorWriter {
         Territory territory = tm.getTerritory();
         int[] ageRange = tm.getAgeRange();
 
+        if (!territory.isEmpty()) {
+            try {
+                printTerritoryTable(territory, areaNames, out);
+                
+            } catch (IOException ex) {
+                System.err.println(ex.getMessage());
+                return false;
+            }
+        }
+               
         try {
             tm.printTemplate("c_user", out);
             tm.printTemplate("cspro2sql_report", out);
@@ -78,8 +89,9 @@ public class MonitorWriter {
         }
 
         if (!territory.isEmpty()) {
-            try {
-                printTerritoryTable(territory, areaNames, out);
+        try {
+            if (tm.printTemplate("r_questionnaire_info_region", out))
+                printMaterialized(schema, "r_questionnaire_info_region", out);
             } catch (IOException ex) {
                 System.err.println(ex.getMessage());
                 return false;
@@ -200,6 +212,8 @@ public class MonitorWriter {
                 throw new IOException("Area names file does not match #territory items in dictionary");
             }
             
+            out.println("TRUNCATE TABLE `territory`;");
+            
             StringBuilder insertPreambleBuilder = new StringBuilder();
             insertPreambleBuilder.append("INSERT INTO `territory` (");
             for (int i = 0; i < territory.size(); i++) {
@@ -247,7 +261,7 @@ public class MonitorWriter {
             }
         }
     }
-
+    
     private static void printMaterialized(String schema, String name, PrintStream out) {
         out.println("DROP TABLE IF EXISTS " + schema + ".m" + name + ";");
         out.println("SELECT 0 INTO @ID;");

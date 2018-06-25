@@ -60,6 +60,11 @@ public class TemplateManager {
             for (Item territory : territories) {
                 this.territory.addItem(territory);
             }
+            
+            // Assume that geographic ids are in order in dictionary so region is
+            // the first one. Depending on country may not be a region but it should
+            // be the highest level of geography which is what we want for reports.
+            this.params.put("@QUESTIONNAIRE_COLUMN_FIRST_LEVEL_GEO", territory.getFirst().getItemName());
         }
 
         if (dictionary.hasTagged(Dictionary.TAG_AGE)) {
