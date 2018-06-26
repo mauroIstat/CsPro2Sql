@@ -42,7 +42,8 @@ public class MonitorWriter {
         "r_individual_info",
         "r_religion",
         "r_sex_by_age",
-        "r_first_level_geography"
+        "r_first_level_geography",
+        "r_sex_by_age_group_region"
     };
 
     private static int reportCount = 0;
