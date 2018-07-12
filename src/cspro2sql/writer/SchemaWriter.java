@@ -33,7 +33,7 @@ import java.util.Set;
  */
 public class SchemaWriter {
 
-    public static void write(Dictionary dictionary, boolean foreignKeys, PrintStream ps) {
+    public static void write(Dictionary dictionary, boolean foreignKeys, PrintStream ps) throws IOException {
         TemplateManager tm = new TemplateManager(dictionary);
         String schema = dictionary.getSchema();
 

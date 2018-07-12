@@ -100,17 +100,19 @@ public class MonitorWriter {
         }
 
         if (!territory.isEmpty()) {
-            TerritoryItem territoryItem = territory.getFirst();
+            TerritoryItem firstTerritoryItem = territory.getFirst();
             out.println("CREATE OR REPLACE VIEW " + schema + ".`r_regional_area` AS");
-            String groupBy = territoryItem.getItemName();
-            String name = territoryItem.getName();
-            out.print("  SELECT '" + name + "' name, COUNT(0) value FROM (SELECT COUNT(0) FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " GROUP BY " + groupBy + ") a0");
+            String groupBy = firstTerritoryItem.getItemName();
+            String name = firstTerritoryItem.getName();
+            String fromClause = territory.getFromClause();
+
+            out.print("  SELECT '" + name + "' name, COUNT(0) value FROM (SELECT COUNT(0) FROM " + fromClause + " GROUP BY " + groupBy + ") a0");
             for (int i = 1; i < territory.size(); i++) {
-                territoryItem = territory.get(i);
+                TerritoryItem territoryItem = territory.get(i);
                 name = territoryItem.getName();
                 groupBy += "," + territoryItem.getItemName();
                 out.println(" UNION");
-                out.print("  SELECT '" + name + "', COUNT(0) FROM (SELECT COUNT(0) FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " GROUP BY " + groupBy + ") a" + i);
+                out.print("  SELECT '" + name + "', COUNT(0) FROM (SELECT COUNT(0) FROM " + fromClause + " GROUP BY " + groupBy + ") a" + i);
             }
             out.println();
             out.println(";");
@@ -158,7 +160,12 @@ public class MonitorWriter {
                 out.print(",'#'," + territoryItem.selectDescription());
             }
             out.println(") as name, COUNT(0) AS `household`");
-            out.println("  FROM " + schema + "." + tm.getParam("@QUESTIONNAIRE_TABLE") + " `h`");
+            out.print("  FROM (SELECT " + territory.getFirst().getItem().getColunmFullName());
+            for (int i = 1; i < territory.size(); i++) {
+                out.print(", " + territory.get(i).getItem().getColunmFullName());
+            }
+            
+            out.println(" FROM " + territory.getFromClause() + ") `h`");
             out.print("  GROUP BY ");
             territoryItem = territory.getFirst();
             out.print("`h`." + territoryItem.getItemName());
@@ -171,19 +178,24 @@ public class MonitorWriter {
         }
 
         if (!territory.isEmpty()) {
-            printAuxTable(tm, tm, "aux_household_returned", "returned", out);
-            printAuxTable(tm, (tmListing != null) ? tmListing : tm, "aux_listing_returned", "returned", out);
-            printAuxTable(tm, (tmExpected != null) ? tmExpected : tm, "aux_household_expected", "expected", out);
+            try {
+                printAuxTable(tm, tm, "aux_household_returned", "returned", out);
+                printAuxTable(tm, (tmListing != null) ? tmListing : tm, "aux_listing_returned", "returned", out);
+                printAuxTable(tm, (tmExpected != null) ? tmExpected : tm, "aux_household_expected", "expected", out);
 
-            int upTo = 1;
-            for (int i = 0; i < territory.size(); i++) {
-                TerritoryItem territoryItem = territory.get(i);
-                printExpectedReport(tm, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), upTo++, out);
-                printMaterialized(schema, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), out);
+                int upTo = 1;
+                for (int i = 0; i < territory.size(); i++) {
+                    TerritoryItem territoryItem = territory.get(i);
+                    printExpectedReport(tm, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), upTo++, out);
+                    printMaterialized(schema, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), out);
+                }
+
+                printTotalReport(tm, (tmListing != null) ? tmListing : tm, out);
+                printMaterialized(schema, "r_total", out);
+            } catch (IOException ex) {
+                System.err.println(ex.getMessage());
+                return false;
             }
-
-            printTotalReport(tm, (tmListing != null) ? tmListing : tm, out);
-            printMaterialized(schema, "r_total", out);
         }
                 
         return true;
@@ -271,10 +283,16 @@ public class MonitorWriter {
         out.println();
     }
 
-    private static void printAuxTable(TemplateManager mainTm, TemplateManager tm, String auxName, String columnName, PrintStream out) {
+    private static void printAuxTable(TemplateManager mainTm, TemplateManager tm, String auxName, String columnName, PrintStream out) throws IOException {
         Set<Record> records = new LinkedHashSet<>();
         Territory territory = tm.getTerritory();
         Territory mainTerritory = mainTm.getTerritory();
+        if (territory.size() != mainTerritory.size()) {
+            throw new IOException("Number of territories in " + tm.getDictionary().getName() + 
+                    " is different from number of territories in " + 
+                    mainTm.getDictionary().getName() +
+                    ". Fix #territory tags in dictionaries so that they match");            
+        }
         out.println("CREATE OR REPLACE VIEW " + tm.getDictionary().getSchema() + "." + auxName + " AS");
         out.println("    SELECT ");
         for (int i = 0; i < territory.size(); i++) {

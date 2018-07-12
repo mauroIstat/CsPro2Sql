@@ -57,19 +57,25 @@ public class MonitorEngine {
     }
 
     static boolean execute(List<Dictionary> dictionaries, AreaNameFile areaNames, Properties prop, PrintStream out) {
-        TemplateManager tmFieldwork = null, tmListing = null, tmExpected = null;
-        for (Dictionary dictionary : dictionaries) {
-            if (dictionary.hasTag(Dictionary.TAG_FIELDWORK)) {
-                tmFieldwork = new TemplateManager(dictionary);
-            } else if (dictionary.hasTag(Dictionary.TAG_LISTING)) {
-                tmListing = new TemplateManager(dictionary);
-            } else if (dictionary.hasTag(Dictionary.TAG_EXPECTED)) {
-                tmExpected = new TemplateManager(dictionary);
+        
+        try {
+            TemplateManager tmFieldwork = null, tmListing = null, tmExpected = null;
+            for (Dictionary dictionary : dictionaries) {
+                if (dictionary.hasTag(Dictionary.TAG_FIELDWORK)) {
+                    tmFieldwork = new TemplateManager(dictionary);
+                } else if (dictionary.hasTag(Dictionary.TAG_LISTING)) {
+                    tmListing = new TemplateManager(dictionary);
+                } else if (dictionary.hasTag(Dictionary.TAG_EXPECTED)) {
+                    tmExpected = new TemplateManager(dictionary);
+                }
             }
+
+            boolean gisEnabled = prop.getProperty("gis.enabled") != null && (prop.getProperty("gis.enabled").equalsIgnoreCase("true") || prop.getProperty("gis.enabled").equals("1"));
+            return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, areaNames, gisEnabled ,out);
+        } catch (IOException ex) {
+            System.err.println(ex.getMessage());
+            return false;
         }
-               
-        boolean gisEnabled = prop.getProperty("gis.enabled") != null && (prop.getProperty("gis.enabled").equalsIgnoreCase("true") || prop.getProperty("gis.enabled").equals("1"));
-        return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, areaNames, gisEnabled ,out);
     }
 
 }

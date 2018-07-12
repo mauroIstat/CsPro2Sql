@@ -1,6 +1,9 @@
 package cspro2sql.bean;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -28,32 +31,63 @@ import java.util.Map;
  */
 public class Territory {
 
-    private final Map<String, TerritoryItem> items;
     private final List<TerritoryItem> itemsList;
 
     public Territory() {
-        this.items = new LinkedHashMap<>();
         this.itemsList = new LinkedList<>();
     }
+    
+    public void addItems(Iterable<Item> dictItems) throws IOException {
 
-    public void addItem(Item item) {
-        String name = null;
-        TerritoryItem parent = null;
-        Tag tag = item.getTag(Dictionary.TAG_TERRITORY);
-        if (tag.getValue() != null) {
-            String[] tagValues = tag.getValue().split(",");
-            name = tagValues[0];
-            if (tagValues.length > 1 && !tagValues[1].isEmpty()) {
-                parent = items.get(tagValues[1]);
+        ArrayList<Item> dictItemList = new ArrayList<>();
+        final Map<Item, String> dictItemToParentName = new LinkedHashMap<>();
+        final Map<Item, String> dictItemToName = new LinkedHashMap<>();
+        for (Item dictItem : dictItems) {
+            dictItemList.add(dictItem);
+            Tag tag = dictItem.getTag(Dictionary.TAG_TERRITORY);
+            if (tag.getValue() != null) {
+                String[] tagValues = tag.getValue().split(",");
+                dictItemToName.put(dictItem, tagValues[0]);
+                if (tagValues.length > 1 && !tagValues[1].isEmpty()) {
+                    dictItemToParentName.put(dictItem, tagValues[1]);
+                }
             }
         }
-        TerritoryItem territoryItem = new TerritoryItem(item, parent, name);
-        items.put(item.getName(), territoryItem);
-        itemsList.add(territoryItem);
+
+        int i = 0;
+        while (i < dictItemList.size())
+        {
+            Item dictItem = dictItemList.get(i);
+            String parentName = dictItemToParentName.getOrDefault(dictItem, null);
+            String prevName = i == 0 ? null : dictItemList.get(i-1).getName();
+            if (parentName == null || parentName.compareTo(prevName) == 0) {
+                ++i;
+            } else {
+                dictItemList.remove(i);
+                int parentPos = 0;
+                for (; parentPos < dictItemList.size() && dictItemList.get(parentPos).getName().compareTo(parentName) != 0; ++parentPos)
+                {    
+                }
+                if (parentPos == dictItemList.size()) {
+                    throw new IOException("Territory " + dictItem.getName() + " has parent " + parentName + " that is NOT in found in territories");
+                }
+                dictItemList.add(parentPos + 1, dictItem);
+            }
+        }
+            
+        Map<String, TerritoryItem> nameToTerritoryItem = new LinkedHashMap<>();
+        for (Item dictItem : dictItemList)
+        {   
+            String parentName = dictItemToParentName.getOrDefault(dictItem, null);
+            TerritoryItem parent = parentName != null ? nameToTerritoryItem.get(parentName) : null;
+            TerritoryItem territoryItem = new TerritoryItem(dictItem, parent, dictItemToName.get(dictItem));
+            nameToTerritoryItem.put(dictItem.getName(), territoryItem);
+            itemsList.add(territoryItem);
+        }
     }
 
     public boolean isEmpty() {
-        return this.items.isEmpty();
+        return this.itemsList.isEmpty();
     }
 
     public TerritoryItem getFirst() {
@@ -68,4 +102,28 @@ public class Territory {
         return this.itemsList.size();
     }
 
+    public Iterable<Record> getItemRecords()
+    {
+        LinkedHashSet<Record> itemRecords = new LinkedHashSet<>();
+        for (int i = 0; i < itemsList.size(); i++) {
+            itemRecords.add(itemsList.get(i).getItem().getRecord());
+        }
+        return itemRecords;
+    }
+    
+    public String getFromClause()
+    {
+        if (itemsList.isEmpty())
+            return null;
+        
+        Record mainRecord = itemsList.get(0).getItem().getRecord().getMainRecord();
+        String from = mainRecord.getTableName();
+        
+        for (Record record : getItemRecords()) {
+            if (!record.isMainRecord())
+                from += " JOIN " + record.getTableName() + " ON " + mainRecord.getTableName() + ".ID = " + record.getTableName() + "." + mainRecord.getName();
+        }
+        
+        return from;
+    }    
 }
