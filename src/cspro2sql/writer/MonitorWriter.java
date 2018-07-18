@@ -48,11 +48,15 @@ public class MonitorWriter {
 
     private static int reportCount = 0;
 
-    public static boolean write(TemplateManager tm, TemplateManager tmListing, TemplateManager tmExpected, AreaNameFile areaNames, boolean gisEnabled, PrintStream out) {
+    public static boolean write(TemplateManager tm, TemplateManager tmListing, 
+            TemplateManager tmExpected, TemplateManager tmEaStatus, 
+            AreaNameFile areaNames, boolean gisEnabled, PrintStream out) {
+        
         String schema = tm.getDictionary().getSchema();
 
         tm.addParam("@LISTING", tmListing == null ? "0" : "1");
         tm.addParam("@EXPECTED", tmExpected == null ? "0" : "1");
+        tm.addParam("@EA_STATUS", tmEaStatus == null ? "0" : "1");
         tm.addParam("@GIS", gisEnabled ? "1" : "0");
         
         out.println("USE " + schema + ";");
@@ -183,11 +187,24 @@ public class MonitorWriter {
                 printAuxTable(tm, (tmListing != null) ? tmListing : tm, "aux_listing_returned", "returned", out);
                 printAuxTable(tm, (tmExpected != null) ? tmExpected : tm, "aux_household_expected", "expected", out);
 
-                int upTo = 1;
+                boolean createEaTables = tmEaStatus != null && tmExpected != null && tmEaStatus.hasParam("@EA_STATUS_VALUE_COMPLETE");
+                
+                if (createEaTables) {
+                    printAuxEaStatusTable(tm, tmExpected, "aux_ea_expected", "expected", out);
+                    printAuxEaStatusTable(tm, tmEaStatus, "aux_ea_completed", "completed", out);
+                }
+
                 for (int i = 0; i < territory.size(); i++) {
+                    final int upTo = i + 1;
+                
                     TerritoryItem territoryItem = territory.get(i);
-                    printExpectedReport(tm, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), upTo++, out);
+                    printExpectedReport(tm, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), upTo, out);
                     printMaterialized(schema, "r_household_expected_by_" + territoryItem.getName().toLowerCase(), out);
+                    
+                    if (createEaTables && i < territory.size() - 1) {
+                        printExpectedEaReport(tm, "r_ea_expected_by_" + territoryItem.getName().toLowerCase(), upTo, out);
+                        printMaterialized(schema, "r_ea_expected_by_" + territoryItem.getName().toLowerCase(), out);
+                    }
                 }
 
                 printTotalReport(tm, (tmListing != null) ? tmListing : tm, out);
@@ -269,7 +286,7 @@ public class MonitorWriter {
                         fmt.format(formatSpecs[i], area.getCodes().get(i));
                     }
                     
-                    out.println("'" + area.getName() + "'," + area.getCodes().get(numLevels - 1) +  ",'" + fullCodeBuilder.toString() + "');");
+                    out.println("'" + area.getName().replace("'", "''")   + "'," + area.getCodes().get(numLevels - 1) +  ",'" + fullCodeBuilder.toString() + "');");
                 }
             }
         }
@@ -317,6 +334,12 @@ public class MonitorWriter {
                 out.println("            JOIN " + record.getFullTableName() + " ON " + record.getMainRecord().getTableName() + ".ID = " + record.getTableName() + "." + record.getMainRecord().getName());
             }
         }
+        out.println("    WHERE");
+        for (int i = 0; i < territory.size() - 1; i++) {
+            Item item = territory.get(i).getItem();
+            out.println("        " + item.getColunmFullName() + " IS NOT NULL AND");
+        }
+        out.println("        " + territory.get(territory.size() - 1).getItem().getColunmFullName() + " IS NOT NULL");
         out.println("    GROUP BY");
         for (int i = 0; i < territory.size() - 1; i++) {
             Item item = territory.get(i).getItem();
@@ -327,6 +350,59 @@ public class MonitorWriter {
         out.println();
     }
 
+    private static void printAuxEaStatusTable(TemplateManager mainTm, TemplateManager tm, String auxName, String columnName, PrintStream out) throws IOException {
+        Set<Record> records = new LinkedHashSet<>();
+        Territory territory = tm.getTerritory();
+        Territory mainTerritory = mainTm.getTerritory();
+        if (territory.size() != mainTerritory.size()) {
+            throw new IOException("Number of territories in " + tm.getDictionary().getName() + 
+                    " is different from number of territories in " + 
+                    mainTm.getDictionary().getName() +
+                    ". Fix #territory tags in dictionaries so that they match");            
+        }
+        out.println("CREATE OR REPLACE VIEW " + tm.getDictionary().getSchema() + "." + auxName + " AS");
+        out.println("    SELECT ");
+        for (int i = 0; i < territory.size() - 1; i++) {
+            TerritoryItem territoryItem = territory.get(i);
+            TerritoryItem mainTerritoryItem = mainTerritory.get(i);
+            Item item = territoryItem.getItem();
+            out.println("        " + item.getColunmFullName() + " AS " + mainTerritoryItem.getItemName() + ",");
+            records.add(item.getRecord());
+        }
+        Item expected = tm.getDictionary().getTaggedItem(Dictionary.TAG_EXPECTED_QUESTIONNAIRES);
+        Item completed = tm.getDictionary().getTaggedItem(Dictionary.TAG_EA_COMPLETION_STATUS);
+        
+        if (expected  != null) {
+            out.println("        COUNT(0) AS `" + columnName + "`");
+            records.add(expected.getRecord());
+        } else if (completed != null) {
+            out.println("        SUM(" + completed.getColunmFullName() + " = " + tm.getParam("@EA_STATUS_VALUE_COMPLETE") + ") AS `" + columnName + "`");
+            records.add(completed.getRecord());
+        }
+        Record[] recArray = records.toArray(new Record[0]);
+        out.println("    FROM");
+        out.println("        " + recArray[0].getMainRecord().getFullTableName());
+        for (Record record : recArray) {
+            if (!record.isMainRecord()) {
+                out.println("            JOIN " + record.getFullTableName() + " ON " + record.getMainRecord().getTableName() + ".ID = " + record.getTableName() + "." + record.getMainRecord().getName());
+            }
+        }
+        out.println("    WHERE");
+        for (int i = 0; i < territory.size() - 1; i++) {
+            Item item = territory.get(i).getItem();
+            out.println("        " + item.getColunmFullName() + " IS NOT NULL AND");
+        }
+        out.println("        " + territory.get(territory.size() - 1).getItem().getColunmFullName() + " IS NOT NULL");
+        out.println("    GROUP BY");
+        for (int i = 0; i < territory.size() - 2; i++) {
+            Item item = territory.get(i).getItem();
+            out.println("        " + item.getColunmFullName() + ",");
+        }
+        Item item = territory.get(territory.size() - 2).getItem();
+        out.println("        " + item.getColunmFullName() + ";");
+        out.println();
+    }
+    
     private static void printExpectedReport(TemplateManager tm, String reportName, int upTo, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
         Territory territory = tm.getTerritory();
@@ -388,13 +464,66 @@ public class MonitorWriter {
             out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `e`.`" + territoryItem.getItemName() + "`)");
         }
         out.print("    GROUP BY `name`");
-        for (int i = 0; i < upTo; i++) {
+        for (int i = 1; i < upTo; i++) {
             out.print(", `h`.`" + territory.get(i).getItemName() + "`");
         }
         out.println(";");
         out.println();
     }
 
+    private static void printExpectedEaReport(TemplateManager tm, String reportName, int upTo, PrintStream out) {
+        String schema = tm.getDictionary().getSchema();
+        Territory territory = tm.getTerritory();
+
+        out.println("CREATE OR REPLACE VIEW " + schema + ".`" + reportName + "` AS");
+        out.println("    SELECT ");
+        out.print("        _utf8mb4 '" + territory.getFirst().getName());
+        for (int i = 1; i < upTo; i++) {
+            out.print("#" + territory.get(i).getName());
+        }
+        out.println("' COLLATE utf8mb4_unicode_ci AS `name`,");
+        for (int i = 0; i < upTo; i++) {
+            out.println("        NULL AS `" + territory.get(i).getItemName() + "`,");
+        }
+        out.println("        NULL AS `completed`,");
+        out.println("        NULL AS `expected`,");
+        out.println("        NULL AS `completed_expected`");
+        out.println("    ");
+        out.println("    UNION SELECT ");
+        out.print("        CONCAT(");
+        TerritoryItem territoryItem = territory.getFirst();
+        out.print(territoryItem.selectDescription());
+        for (int i = 1; i < upTo; i++) {
+            territoryItem = territory.get(i);
+            out.print(",'#'," + territoryItem.selectDescription());
+        }
+        out.println(") AS `name`,");
+        for (int i = 0; i < upTo; i++) {
+            out.println("        `h`." + territory.get(i).getItemName() + " AS `" + territory.get(i).getItemName() + "`,");
+        }
+        out.println("        COALESCE((`c`.`completed`), 0) AS `completed`,");
+        out.println("        SUM(`h`.`expected`) AS `expected`,");
+        out.println("        ((COALESCE((`c`.`completed`), 0) / SUM(`h`.`expected`)) * 100) AS `completed_expected`");
+        out.println("    FROM");
+        printSubTable(tm, "aux_ea_expected", "expected", upTo, out);
+        out.println("        `h`");
+        out.println("        LEFT JOIN ");
+        printSubTable(tm, "aux_ea_completed", "completed", upTo, out);
+        out.println("        `c` ON");
+        territoryItem = territory.getFirst();
+        out.println("            (`h`.`" + territoryItem.getItemName() + "` = `c`.`" + territoryItem.getItemName() + "`)");
+        for (int i = 1; i < upTo; i++) {
+            territoryItem = territory.get(i);
+            out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `c`.`" + territoryItem.getItemName() + "`)");
+        }
+        out.print("    GROUP BY `name`");
+        for (int i = 1; i < upTo; i++) {
+            out.print(", `h`.`" + territory.get(i).getItemName() + "`");
+        }
+        out.println(";");
+        out.println();
+    }
+    
     private static void printSubTable(TemplateManager tm, String tableName, String columnName, int upTo, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
         Territory territory = tm.getTerritory();
@@ -409,7 +538,7 @@ public class MonitorWriter {
         out.println("            FROM `" + schema + "`.`" + tableName + "`");
         out.println("            GROUP BY");
         out.print("                `" + tableName + "`." + territory.getFirst().getItemName());
-        for (int i = 0; i < upTo && i < territory.size(); i++) {
+        for (int i = 1; i < upTo && i < territory.size(); i++) {
             TerritoryItem territoryItem = territory.get(i);
             out.print(",\n                `" + tableName + "`." + territoryItem.getItemName());
         }
@@ -432,6 +561,7 @@ public class MonitorWriter {
         out.println("            FROM");
         printSubTable(tm, "aux_listing_returned", "returned", 1000, out);
         out.println("            `a`) AS `ea_freshlist`,");
+	out.println("        (SELECT SUM(completed) FROM aux_ea_completed) AS `ea_completed`,");
         out.println("        (SELECT ");
         out.println("                COUNT(0)");
         out.println("            FROM");

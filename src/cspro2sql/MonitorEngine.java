@@ -59,7 +59,8 @@ public class MonitorEngine {
     static boolean execute(List<Dictionary> dictionaries, AreaNameFile areaNames, Properties prop, PrintStream out) {
         
         try {
-            TemplateManager tmFieldwork = null, tmListing = null, tmExpected = null;
+            TemplateManager tmFieldwork = null, tmListing = null, 
+                    tmExpected = null, tmEaStatus = null;
             for (Dictionary dictionary : dictionaries) {
                 if (dictionary.hasTag(Dictionary.TAG_FIELDWORK)) {
                     tmFieldwork = new TemplateManager(dictionary);
@@ -67,11 +68,13 @@ public class MonitorEngine {
                     tmListing = new TemplateManager(dictionary);
                 } else if (dictionary.hasTag(Dictionary.TAG_EXPECTED)) {
                     tmExpected = new TemplateManager(dictionary);
+                } else if (dictionary.hasTag(Dictionary.TAG_EA_STATUS)) {
+                    tmEaStatus = new TemplateManager(dictionary);
                 }
             }
 
             boolean gisEnabled = prop.getProperty("gis.enabled") != null && (prop.getProperty("gis.enabled").equalsIgnoreCase("true") || prop.getProperty("gis.enabled").equals("1"));
-            return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, areaNames, gisEnabled ,out);
+            return MonitorWriter.write(tmFieldwork, tmListing, tmExpected, tmEaStatus, areaNames, gisEnabled ,out);
         } catch (IOException ex) {
             System.err.println(ex.getMessage());
             return false;

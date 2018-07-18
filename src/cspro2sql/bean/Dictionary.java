@@ -108,6 +108,9 @@ public final class Dictionary extends Taggable {
     public static final Tag TAG_LISTING = new Tag("#listing");
     public static final Tag TAG_EXPECTED = new Tag("#expected");
     public static final Tag TAG_EXPECTED_QUESTIONNAIRES = new Tag("#expectedQuestionnaires");
+    public static final Tag TAG_EA_STATUS = new Tag("#eaStatus");
+    public static final Tag TAG_EA_COMPLETED = new Tag("#eaCompleted");
+    public static final Tag TAG_EA_COMPLETION_STATUS = new Tag("#eaCompletionStatus");
 
     private final String schema, prefix;
     private final List<Record> records = new LinkedList<>();

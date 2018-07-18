@@ -100,6 +100,9 @@ public class TemplateManager {
         if (dictionary.hasTagged(Dictionary.TAG_FEMALE)) {
             this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", dictionary.getTaggedValueSetValue(Dictionary.TAG_FEMALE).getKey());
         }
+        if (dictionary.hasTagged(Dictionary.TAG_EA_COMPLETED)) {
+            this.params.put("@EA_STATUS_VALUE_COMPLETE", dictionary.getTaggedValueSetValue(Dictionary.TAG_EA_COMPLETED).getKey());
+        }
     }
 
     public Dictionary getDictionary() {
