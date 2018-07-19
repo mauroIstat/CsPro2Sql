@@ -445,17 +445,17 @@ public class MonitorWriter {
         for (int i = 0; i < upTo; i++) {
             out.println("        `h`." + territory.get(i).getItemName() + " AS `" + territory.get(i).getItemName() + "`,");
         }
-        out.println("        SUM(`h`.`returned`) AS `returned`,");
+        out.println("        SUM(`e`.`returned`) AS `returned`,");
         out.println("        SUM(`l`.`returned`) AS `returned`,");
-        out.println("        SUM(`e`.`expected`) AS `expected`,");
-        out.println("        ((SUM(`h`.`returned`) / SUM(`l`.`returned`)) * 100) AS `field_freshlist`,");
-        out.println("        ((SUM(`h`.`returned`) / SUM(`e`.`expected`)) * 100) AS `field_expected`,");
-        out.println("        ((SUM(`l`.`returned`) / SUM(`e`.`expected`)) * 100) AS `freshlist_expected`");
+        out.println("        SUM(`h`.`expected`) AS `expected`,");
+        out.println("        ((SUM(`e`.`returned`) / SUM(`l`.`returned`)) * 100) AS `field_freshlist`,");
+        out.println("        ((SUM(`e`.`returned`) / SUM(`h`.`expected`)) * 100) AS `field_expected`,");
+        out.println("        ((SUM(`l`.`returned`) / SUM(`h`.`expected`)) * 100) AS `freshlist_expected`");
         out.println("    FROM");
-        printSubTable(tm, "aux_household_returned", "returned", upTo, out);
+        printSubTable(tm, "aux_household_expected", "expected", upTo, out);
         out.println("        `h`");
-        out.println("        JOIN ");
-        printSubTable(tm, "aux_listing_returned", "returned", upTo, out);
+        out.println("        LEFT JOIN ");
+        printSubTable(tm, "aux_household_returned", "returned", upTo, out);
         out.println("            `l` ON");
         territoryItem = territory.getFirst();
         out.println("            (`h`.`" + territoryItem.getItemName() + "` = `l`.`" + territoryItem.getItemName() + "`)");
@@ -463,8 +463,8 @@ public class MonitorWriter {
             territoryItem = territory.get(i);
             out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `l`.`" + territoryItem.getItemName() + "`)");
         }
-        out.println("        JOIN");
-        printSubTable(tm, "aux_household_expected", "expected", upTo, out);
+        out.println("        LEFT JOIN");
+        printSubTable(tm, "aux_listing_returned", "returned", upTo, out);
         out.println("        `e` ON");
         territoryItem = territory.getFirst();
         out.println("            (`h`.`" + territoryItem.getItemName() + "` = `e`.`" + territoryItem.getItemName() + "`)");
@@ -473,7 +473,7 @@ public class MonitorWriter {
             out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `e`.`" + territoryItem.getItemName() + "`)");
         }
         out.print("    GROUP BY `name`");
-        for (int i = 1; i < upTo; i++) {
+        for (int i = 0; i < upTo; i++) {
             out.print(", `h`.`" + territory.get(i).getItemName() + "`");
         }
         out.println(";");
@@ -510,9 +510,9 @@ public class MonitorWriter {
         for (int i = 0; i < upTo; i++) {
             out.println("        `h`." + territory.get(i).getItemName() + " AS `" + territory.get(i).getItemName() + "`,");
         }
-        out.println("        COALESCE((`c`.`completed`), 0) AS `completed`,");
+        out.println("        SUM(COALESCE(`c`.`completed`, 0)) AS `completed`,");
         out.println("        SUM(`h`.`expected`) AS `expected`,");
-        out.println("        ((COALESCE((`c`.`completed`), 0) / SUM(`h`.`expected`)) * 100) AS `completed_expected`");
+        out.println("        ((SUM(COALESCE(`c`.`completed`, 0)) / SUM(`h`.`expected`)) * 100) AS `completed_expected`");
         out.println("    FROM");
         printSubTable(tm, "aux_ea_expected", "expected", upTo, out);
         out.println("        `h`");
@@ -526,7 +526,7 @@ public class MonitorWriter {
             out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `c`.`" + territoryItem.getItemName() + "`)");
         }
         out.print("    GROUP BY `name`");
-        for (int i = 1; i < upTo; i++) {
+        for (int i = 0; i < upTo; i++) {
             out.print(", `h`.`" + territory.get(i).getItemName() + "`");
         }
         out.println(";");
@@ -570,7 +570,7 @@ public class MonitorWriter {
         out.println("            FROM");
         printSubTable(tm, "aux_listing_returned", "returned", 1000, out);
         out.println("            `a`) AS `ea_freshlist`,");
-	out.println("        (SELECT SUM(completed) FROM aux_ea_completed) AS `ea_completed`,");
+	out.println("        (SELECT COALESCE(SUM(completed),0) FROM aux_ea_completed) AS `ea_completed`,");
         out.println("        (SELECT ");
         out.println("                COUNT(0)");
         out.println("            FROM");
@@ -585,7 +585,7 @@ public class MonitorWriter {
         out.println("            FROM");
         out.println("                " + tmListing.getDictionary().getMainRecord().getFullTableName() + ") AS `household_freshlist`,");
         out.println("        (SELECT ");
-        out.println("                SUM(`a`.`expected`)");
+        out.println("                COALESCE(SUM(`a`.`expected`), 0)");
         out.println("            FROM");
         printSubTable(tm, "aux_household_expected", "expected", 1000, out);
         out.println("                `a`) AS `household_expected`;");
