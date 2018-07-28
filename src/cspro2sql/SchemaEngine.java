@@ -61,10 +61,15 @@ public class SchemaEngine {
     }
 
     static boolean execute(List<Dictionary> dictionaries, boolean foreignKeys, PrintStream out) {
-        for (Dictionary dictionary : dictionaries) {
-            SchemaWriter.write(dictionary, foreignKeys, out);
+        try {
+            for (Dictionary dictionary : dictionaries) {
+                SchemaWriter.write(dictionary, foreignKeys, out);
+            }
+            return true;
+        } catch (IOException ex) {
+            System.err.println(ex.getMessage());
+            return false;
         }
-        return true;
     }
 
 }

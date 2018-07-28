@@ -1,7 +1,6 @@
 package cspro2sql.sql;
 
 import cspro2sql.bean.Dictionary;
-import cspro2sql.bean.Item;
 import cspro2sql.bean.Record;
 import cspro2sql.bean.Tag;
 import cspro2sql.bean.Territory;
@@ -43,7 +42,7 @@ public class TemplateManager {
     private final int[] ageRange;
     private Territory territory;
 
-    public TemplateManager(Dictionary dictionary) {
+    public TemplateManager(Dictionary dictionary) throws IOException {
         this.dictionary = dictionary;
         Record mainRecord = dictionary.getMainRecord();
         String schema = dictionary.getSchema();
@@ -56,10 +55,12 @@ public class TemplateManager {
 
         this.territory = new Territory();
         if (dictionary.hasTagged(Dictionary.TAG_TERRITORY)) {
-            Iterable<Item> territories = dictionary.getTaggedItems(Dictionary.TAG_TERRITORY);
-            for (Item territory : territories) {
-                this.territory.addItem(territory);
-            }
+            this.territory.addItems(dictionary.getTaggedItems(Dictionary.TAG_TERRITORY));
+            
+            // Assume that geographic ids are in order in dictionary so region is
+            // the first one. Depending on country may not be a region but it should
+            // be the highest level of geography which is what we want for reports.
+            this.params.put("@QUESTIONNAIRE_COLUMN_FIRST_LEVEL_GEO", territory.getFirst().getItemName());
         }
 
         if (dictionary.hasTagged(Dictionary.TAG_AGE)) {
@@ -98,6 +99,9 @@ public class TemplateManager {
         }
         if (dictionary.hasTagged(Dictionary.TAG_FEMALE)) {
             this.params.put("@INDIVIDUAL_VALUE_SEX_FEMALE", dictionary.getTaggedValueSetValue(Dictionary.TAG_FEMALE).getKey());
+        }
+        if (dictionary.hasTagged(Dictionary.TAG_EA_COMPLETED)) {
+            this.params.put("@EA_STATUS_VALUE_COMPLETE", dictionary.getTaggedValueSetValue(Dictionary.TAG_EA_COMPLETED).getKey());
         }
     }
 
