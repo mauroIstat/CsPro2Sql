@@ -455,7 +455,7 @@ public class MonitorWriter {
         printSubTable(tm, "aux_household_expected", "expected", upTo, out);
         out.println("        `h`");
         out.println("        LEFT JOIN ");
-        printSubTable(tm, "aux_household_returned", "returned", upTo, out);
+        printSubTable(tm, "aux_listing_returned", "returned", upTo, out);
         out.println("            `l` ON");
         territoryItem = territory.getFirst();
         out.println("            (`h`.`" + territoryItem.getItemName() + "` = `l`.`" + territoryItem.getItemName() + "`)");
@@ -464,7 +464,7 @@ public class MonitorWriter {
             out.println("            AND (`h`.`" + territoryItem.getItemName() + "` = `l`.`" + territoryItem.getItemName() + "`)");
         }
         out.println("        LEFT JOIN");
-        printSubTable(tm, "aux_listing_returned", "returned", upTo, out);
+        printSubTable(tm, "aux_household_returned", "returned", upTo, out);
         out.println("        `e` ON");
         territoryItem = territory.getFirst();
         out.println("            (`h`.`" + territoryItem.getItemName() + "` = `e`.`" + territoryItem.getItemName() + "`)");
