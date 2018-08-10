@@ -47,9 +47,9 @@ public class Territory {
             Tag tag = dictItem.getTag(Dictionary.TAG_TERRITORY);
             if (tag.getValue() != null) {
                 String[] tagValues = tag.getValue().split(",");
-                dictItemToName.put(dictItem, tagValues[0]);
+                dictItemToName.put(dictItem, tagValues[0].trim());
                 if (tagValues.length > 1 && !tagValues[1].isEmpty()) {
-                    dictItemToParentName.put(dictItem, tagValues[1]);
+                    dictItemToParentName.put(dictItem, tagValues[1].trim());
                 }
             }
         }
