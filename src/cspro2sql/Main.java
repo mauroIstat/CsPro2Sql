@@ -36,11 +36,11 @@ import org.apache.commons.cli.ParseException;
  * @author Guido Drovandi <drovandi @ istat.it>
  * @author Mauro Bruno <mbruno @ istat.it>
  * @author Paolo Giacomi <giacomi @ istat.it>
- * @version 0.9.18.2
+ * @version 0.9.16
  */
 public class Main {
 
-    private static final String VERSION = "0.9.18.2";
+    private static final String VERSION = "0.9.16";
 
     public static void main(String[] args) {
         CsPro2SqlOptions opts = getCommandLineOptions(args);
@@ -50,8 +50,7 @@ public class Main {
             dictionaries = DictionaryReader.parseDictionaries(opts.schema, opts.dictionary, opts.tablePrefix);
         } catch (Exception e) {
             opts.ps.close();
-            opts.printHelp(e.getMessage());
-            System.exit(1);
+            opts.printError(e.getMessage());
             return;
         }
 
@@ -80,6 +79,8 @@ public class Main {
             error = !UpdateEngine.execute(opts.prop);
         } else if (opts.statusEngine) {
             error = !StatusEngine.execute(dictionaries, opts.prop);
+        } else if (opts.linkageEngine) {
+            //error = !LinkageEngine.execute(dictionary, pesDictionary, opts.prop, opts.ps);
         } else if (opts.loadAndUpdate) {
             while (true) {
                 try {
@@ -110,7 +111,7 @@ public class Main {
         options.addOption("a", "all", false, "transfer all the questionnaires");
         options.addOption("cc", "check-constraints", false, "perform constraints check");
         options.addOption("co", "check-only", false, "perform only constraints check (no data transfer)");
-        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status]");
+        options.addOption("e", "engine", true, "select engine: [loader|schema|monitor|update|status|linkage]");
         options.addOption("f", "force", false, "skip check of loader multiple running instances");
         options.addOption("fk", "foreign-keys", false, "create foreign keys to value sets");
         options.addOption("h", "help", false, "display this help");
@@ -120,6 +121,7 @@ public class Main {
         options.addOption("v", "version", false, "print the version of the programm");
         options.addOption("d", "delay", true, "perform again after DELAY minutes");
 
+        //Begin parsing command line
         CsPro2SqlOptions opts = new CsPro2SqlOptions(options);
         try {
             CommandLineParser parser = new DefaultParser();
@@ -132,64 +134,72 @@ public class Main {
                 opts.printVersion();
             }
 
-            if (!cmd.hasOption("e")) {
-                opts.printHelp("The engine type is mandatory!");
-            }
-            if (!cmd.hasOption("p")) {
-                opts.printHelp("The properties file is mandatory!");
-            }
+            if (cmd.hasOption("e")) {
 
-            opts.propertiesFile = cmd.getOptionValue("p");
-            String engine = cmd.getOptionValue("e");
-            switch (engine) {
-                case "schema":
-                    opts.schemaEngine = true;
-                    opts.foreignKeys = cmd.hasOption("fk");
-                    if (cmd.hasOption("o")) {
-                        opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
-                    } else {
-                        opts.ps = System.out;
-                    }
-                    break;
-                case "loader":
-                case "LU":
-                    opts.loaderEngine = "loader".equals(engine);
-                    opts.loadAndUpdate = "LU".equals(engine);
-                    opts.checkConstraints = cmd.hasOption("cc");
-                    opts.checkOnly = cmd.hasOption("co");
-                    opts.allRecords = cmd.hasOption("a");
-                    opts.force = cmd.hasOption("f");
-                    opts.recovery = cmd.hasOption("r");
-                    if (cmd.hasOption("o")) {
-                        opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
-                    }
-                    if (opts.loadAndUpdate && !cmd.hasOption("d")) {
-                        opts.printHelp("The delay is mandatory!");
-                    }
-                    if (cmd.hasOption("d")) {
-                        opts.delay = Integer.parseInt(cmd.getOptionValue("d")) * 60 * 1000;
-                        if (opts.delay < 0) {
-                            opts.printHelp("The delay cannot be negative!");
+                //[TO DO] Check if engine type exists
+                
+                //Questo controllo sembra non funzionare
+                if (!cmd.hasOption("p")) {
+                    opts.printError("The properties file is mandatory!");
+                }
+
+                opts.propertiesFile = cmd.getOptionValue("p");
+                String engine = cmd.getOptionValue("e");
+                switch (engine) {
+                    case "schema":
+                        opts.schemaEngine = true;
+                        opts.foreignKeys = cmd.hasOption("fk");
+                        if (cmd.hasOption("o")) {
+                            opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
+                        } else {
+                            opts.ps = System.out;
                         }
-                    }
-                    break;
-                case "monitor":
-                    opts.monitorEngine = true;
-                    if (cmd.hasOption("o")) {
-                        opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
-                    } else {
-                        opts.ps = System.out;
-                    }
-                    break;
-                case "update":
-                    opts.updateEngine = true;
-                    break;
-                case "status":
-                    opts.statusEngine = true;
-                    break;
-                default:
-                    opts.printHelp("Wrong engine type!");
-                    break;
+                        break;
+                    case "loader":
+                    case "LU":
+                        opts.loaderEngine = "loader".equals(engine);
+                        opts.loadAndUpdate = "LU".equals(engine);
+                        opts.checkConstraints = cmd.hasOption("cc");
+                        opts.checkOnly = cmd.hasOption("co");
+                        opts.allRecords = cmd.hasOption("a");
+                        opts.force = cmd.hasOption("f");
+                        opts.recovery = cmd.hasOption("r");
+                        if (cmd.hasOption("o")) {
+                            opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
+                        }
+                        if (opts.loadAndUpdate && !cmd.hasOption("d")) {
+                            opts.printError("The delay is mandatory!");
+                        }
+                        if (cmd.hasOption("d")) {
+                            opts.delay = Integer.parseInt(cmd.getOptionValue("d")) * 60 * 1000;
+                            if (opts.delay < 0) {
+                                opts.printError("The delay cannot be negative!");
+                            }
+                        }
+                        break;
+                    case "monitor":
+                        opts.monitorEngine = true;
+                        if (cmd.hasOption("o")) {
+                            opts.ps = new PrintStream(cmd.getOptionValue("o"), "UTF-8");
+                        } else {
+                            opts.ps = System.out;
+                        }
+                        break;
+                    case "update":
+                        opts.updateEngine = true;
+                        break;
+                    case "status":
+                        opts.statusEngine = true;
+                        break;
+                    case "linkage":
+                        opts.linkageEngine = true;
+                        break;
+                    default:
+                        opts.printError("Wrong engine type!");
+                        break;
+                }
+            } else {
+                opts.printHelp();
             }
         } catch (ParseException | FileNotFoundException | UnsupportedEncodingException e) {
             opts.printHelp();
@@ -201,15 +211,15 @@ public class Main {
         try (InputStream in = new FileInputStream(opts.propertiesFile)) {
             prop.load(in);
         } catch (IOException ex) {
-            System.out.println("Cannot read properties file '" + opts.propertiesFile + "'");
-            opts.printHelp();
+            opts.printError("Cannot read properties file '" + opts.propertiesFile + "'");
+            //opts.printHelp();
         }
 
         opts.prop = prop;
         opts.dictionary = prop.getProperty("dictionary");
         opts.schema = prop.getProperty("db.dest.schema");
         if (opts.schema == null || opts.schema.isEmpty()) {
-            opts.printHelp("The database schema is mandatory!\nPlease set 'db.dest.schema' into the properties file");
+            opts.printError("The database schema is mandatory!\nPlease set 'db.dest.schema' into the properties file");
         }
         opts.tablePrefix = prop.getProperty("dictionary.prefix", "");
 
@@ -223,6 +233,7 @@ public class Main {
         boolean monitorEngine;
         boolean updateEngine;
         boolean statusEngine;
+        boolean linkageEngine;
         boolean loadAndUpdate;
         boolean allRecords;
         boolean foreignKeys;
@@ -244,19 +255,14 @@ public class Main {
         }
 
         void printHelp() {
-            printHelp(null);
-        }
-
-        void printHelp(String errMessage) {
             HelpFormatter formatter = new HelpFormatter();
-            if (errMessage != null) {
-                System.err.println(errMessage);
-            }
-            System.out.println("CsPro2Sql - version " + VERSION + "\n");
+
+            //System.out.println("CsPro2Sql - version " + VERSION + "\n");
             formatter.printHelp("\n\n"
                     + "CsPro2Sql -e schema  -p PROPERTIES_FILE [-fk] [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e loader  -p PROPERTIES_FILE [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE] [-d DELAY]\n"
                     + "CsPro2Sql -e monitor -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
+                    + "CsPro2Sql -e linkage -p PROPERTIES_FILE [-o OUTPUT_FILE]\n"
                     + "CsPro2Sql -e update  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e status  -p PROPERTIES_FILE\n"
                     + "CsPro2Sql -e LU      -p PROPERTIES_FILE -d DELAY [-a] [-cc] [-co] [-f|-r] [-o OUTPUT_FILE]\n"
@@ -266,20 +272,29 @@ public class Main {
                     + " - schema: create the sql script for microdata\n"
                     + " - loader: load microdata into the sql database\n"
                     + " - monitor: create the sql script to setup the monitoring system\n"
+                    + " - linkage: create the sql script to setup the PES system\n"
                     + " - update: update the reports of the monitoring system\n"
                     + " - status: print the loader status\n"
                     + " - LU: load and update\n"
                     + "\n", options);
-            if (errMessage == null) {
-                System.exit(0);
-            } else {
-                System.exit(1);
-            }
+
+            System.exit(0);
         }
 
         void printVersion() {
             System.out.println("CsPro2Sql - version " + VERSION);
             System.exit(0);
+        }
+
+        void printError(String errMessage) {
+            
+            if (errMessage != null) {
+                System.err.println("\n[ERROR] " + errMessage);
+                System.err.println("CsPro2Sql -h for usage \n");
+            }
+
+            System.exit(0);
+
         }
     }
 
