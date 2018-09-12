@@ -43,7 +43,7 @@ public class QuestionnaireReader {
             parseItem(item, rows[0], values);
         }
         for (String row : rows) {
-            record = dictionary.getRecord(row.charAt(0));
+            record = dictionary.getRecord(row.substring(dictionary.getRecordTypeStart() - 1, dictionary.getRecordTypeStart() - 1 + dictionary.getRecordTypeLength()));
             valuesList = result.getRecordValues(record);
             if (valuesList == null) {
                 valuesList = new LinkedList<>();

@@ -119,6 +119,8 @@ public final class Dictionary extends Taggable {
     private final Map<Tag, List<Taggable>> tags = new HashMap<>();
 
     private String name;
+    private int recordTypeStart;
+    private int recordTypeLength;
     private Record lastRecord;
     private List<Item> lastItems;
     private List<Item> lastItemsNotSubItem;
@@ -144,6 +146,22 @@ public final class Dictionary extends Taggable {
         this.name = name;
     }
     
+    public int getRecordTypeStart() {
+        return recordTypeStart;
+    }
+    
+    public void setRecordTypeStart(int start) {
+        this.recordTypeStart = start;
+    }
+    
+    public int getRecordTypeLength() {
+        return recordTypeLength;
+    }
+    
+    public void setRecordTypeLength(int length) {
+        this.recordTypeLength = length;
+    }
+
     public void addRecord(Record record) {
         if (record.hasTag(TAG_IGNORE)) {
             return;
