@@ -63,9 +63,9 @@ public class UpdateEngine {
                             while (rs.next()) {
                                 String template = rs.getString(1);
                                 System.out.print("Updating " + template + "... ");
-                                writeDst.executeUpdate("DROP TABLE IF EXISTS " + schema + ".m" + template);
+                                writeDst.executeUpdate("DROP TABLE IF EXISTS " + schema + ".`m" + template + "`");
                                 writeDst.executeQuery("SELECT 0 INTO @ID");
-                                writeDst.executeUpdate("CREATE TABLE " + schema + ".m" + template + " (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, " + template + ".* FROM " + schema + "." + template);
+                                writeDst.executeUpdate("CREATE TABLE " + schema + ".`m" + template + "` (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, `" + template + "`.* FROM " + schema + ".`" + template + "`");
                                 connDst.commit();
                                 System.out.println("done");
                             }

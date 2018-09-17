@@ -196,7 +196,7 @@ public class MonitorWriter {
                     }
                 }
 
-                printTotalReport(tm, (tmListing != null) ? tmListing : tm, out);
+                printTotalReport(tm, (tmListing != null) ? tmListing : tm, createEaTables, out);
                 printMaterialized(schema, "r_total", out);
             } catch (IOException ex) {
                 System.err.println(ex.getMessage());
@@ -302,9 +302,9 @@ public class MonitorWriter {
     }
     
     private static void printMaterialized(String schema, String name, PrintStream out) {
-        out.println("DROP TABLE IF EXISTS " + schema + ".m" + name + ";");
+        out.println("DROP TABLE IF EXISTS " + schema + ".`m" + name + "`;");
         out.println("SELECT 0 INTO @ID;");
-        out.println("CREATE TABLE " + schema + ".m" + name + " (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, " + name + ".* FROM " + schema + "." + name + ";");
+        out.println("CREATE TABLE " + schema + ".`m" + name + "` (PRIMARY KEY (ID)) AS SELECT @ID := @ID + 1 ID, `" + name + "`.* FROM " + schema + ".`" + name + "`;");
         out.println("INSERT INTO " + schema + ".`cspro2sql_report` VALUES ('" + name + "', " + (reportCount++) + ");");
         out.println();
     }
@@ -555,7 +555,7 @@ public class MonitorWriter {
         out.println("            )");
     }
 
-    private static void printTotalReport(TemplateManager tm, TemplateManager tmListing, PrintStream out) {
+    private static void printTotalReport(TemplateManager tm, TemplateManager tmListing, boolean hasEACompleted, PrintStream out) {
         String schema = tm.getDictionary().getSchema();
 
         out.println("CREATE OR REPLACE VIEW `" + schema + "`.`r_total` AS");
@@ -570,7 +570,11 @@ public class MonitorWriter {
         out.println("            FROM");
         printSubTable(tm, "aux_listing_returned", "returned", 1000, out);
         out.println("            `a`) AS `ea_freshlist`,");
-	out.println("        (SELECT COALESCE(SUM(completed),0) FROM aux_ea_completed) AS `ea_completed`,");
+        if (hasEACompleted) {
+            out.println("        (SELECT COALESCE(SUM(completed),0) FROM aux_ea_completed) AS `ea_completed`,");
+        } else {
+            out.println("        (SELECT 0 FROM aux_household_expected LIMIT 1) AS `ea_completed`,");
+        } 
         out.println("        (SELECT ");
         out.println("                COUNT(0)");
         out.println("            FROM");
