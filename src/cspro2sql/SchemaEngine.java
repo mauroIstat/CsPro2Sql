@@ -52,7 +52,7 @@ public class SchemaEngine {
                     prop.getProperty("db.dest.schema"),
                     prop.getProperty("dictionary"),
                     prop.getProperty("dictionary.prefix"));
-            execute(dictionaries, false, System.out);
+            execute(dictionaries, prop, false, System.out);
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Impossible to create the database schema", ex);
             System.exit(1);
@@ -60,9 +60,14 @@ public class SchemaEngine {
 
     }
 
-    static boolean execute(List<Dictionary> dictionaries, boolean foreignKeys, PrintStream out) {
+    static boolean execute(List<Dictionary> dictionaries, Properties prop, boolean foreignKeys, PrintStream out) {
+
         for (Dictionary dictionary : dictionaries) {
-            SchemaWriter.write(dictionary, foreignKeys, out);
+            if ("sqlserver".equals(prop.getProperty("db.dest.type"))) {
+                SchemaWriter.writesqlserver(dictionary, foreignKeys, out);
+            } else {
+                SchemaWriter.write(dictionary, foreignKeys, out);
+            }          
         }
         return true;
     }

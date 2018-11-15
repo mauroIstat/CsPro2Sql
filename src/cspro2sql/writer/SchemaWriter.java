@@ -75,6 +75,49 @@ public class SchemaWriter {
         }
     }
 
+    public static void writesqlserver(Dictionary dictionary, boolean foreignKeys, PrintStream ps) {
+        TemplateManager tm = new TemplateManager(dictionary);
+        String schema = dictionary.getSchema();
+
+        ps.println("CREATE DATABASE " + schema + ";");
+        ps.println();
+        ps.println();
+
+        try {
+            tm.printTemplate("/sqlserver/cspro2sql_dictionary", ps);
+            tm.printTemplate("/sqlserver/cspro2sql_error", ps);
+        } catch (IOException ex) {
+            return;
+        }
+
+        for (Record record : dictionary.getRecords()) {
+            for (Item item : record.getItems()) {
+                printValueSetSqlserver(schema, item, ps);
+            }
+        }
+
+        for (Record record : dictionary.getRecords()) {
+            ps.println("CREATE TABLE dbo." + record.getTableName() + " (");
+            ps.println("    ID INT IDENTITY(1,1),");
+            if (!record.isMainRecord()) {
+                ps.println("    " + record.getMainRecord().getName() + " INT NOT NULL,");
+                ps.println("    COUNTER INT NOT NULL,");
+            }
+            for (Item item : record.getItems()) {
+                printItemSqlserver(schema, foreignKeys, item, ps);
+            }
+            if (!record.isMainRecord()) {
+                ps.println("    PRIMARY KEY (ID),");
+                ps.println("    CONSTRAINT fk_" + record.getTableName() + "_" + record.getMainRecord().getName() + " FOREIGN KEY (" + record.getMainRecord().getName() + ") REFERENCES dbo." + record.getMainRecord().getTableName() + "(id)");
+                ps.println("); CREATE INDEX idx_" + record.getTableName() + "_"+ record.getMainRecord().getName() + " ON dbo." + record.getTableName() + "(" + record.getMainRecord().getName() + ");");
+            } else {
+                ps.println("    PRIMARY KEY (ID)");
+                ps.println(");");
+            }
+            ps.println();
+        }
+    }
+
     private static void printItem(String schema, boolean foreignKeys, Item item, PrintStream ps) {
         String name = item.getName();
         int length = item.getLength();
@@ -96,6 +139,30 @@ public class SchemaWriter {
         }
         for (Item subItem : item.getSubItems()) {
             printItem(schema, foreignKeys, subItem, ps);
+        }
+    }
+
+    private static void printItemSqlserver(String schema, boolean foreignKeys, Item item, PrintStream ps) {
+        String name = item.getName();
+        int length = item.getLength();
+        switch (item.getDataType()) {
+            case Dictionary.ITEM_ALPHA:
+                ps.println("    " + name + " CHAR(" + length + "),");
+                break;
+            case Dictionary.ITEM_DECIMAL:
+                if (item.getDecimal() > 0) {
+                    ps.println("    " + name + " DECIMAL(" + length + ", " + item.getDecimal() + "),");
+                } else {
+                    ps.println("    " + name + " DECIMAL(" + length + ", 0),");
+                }
+                break;
+            default:
+        }
+        if (foreignKeys && item.hasValueSets()) {
+            ps.println("    FOREIGN KEY (" + name + ") REFERENCES " + schema + "." + item.getValueSetName() + "(ID),");
+        }
+        for (Item subItem : item.getSubItems()) {
+            printItemSqlserver(schema, foreignKeys, subItem, ps);
         }
     }
 
@@ -141,4 +208,50 @@ public class SchemaWriter {
         }
     }
 
+    private static void printValueSetSqlserver(String schema, Item item, PrintStream ps) {
+        if (item.hasValueSets() && item.getValueSets().get(0).isNotCreated()) {
+            ps.println("CREATE TABLE dbo." + item.getValueSetName() + " (");
+            switch (item.getDataType()) {
+                case Dictionary.ITEM_ALPHA:
+                    ps.println("    ID CHAR(" + item.getLength() + "),");
+                    break;
+                case Dictionary.ITEM_DECIMAL:
+                    if (item.getLength() > 1) {
+                        ps.println("    ID INT,");
+                    } else {
+                        ps.println("    ID SMALLINT,");
+                    }
+
+                    break;
+                default:
+            }
+            ps.println("    VALUE NTEXT,");
+            ps.println("    PRIMARY KEY (ID)");
+            ps.println(");");
+            ps.println();
+            boolean first = true;
+            Set<String> keys = new HashSet<>();
+            ps.println("INSERT INTO dbo." + item.getValueSetName() + "(ID,VALUE) VALUES ");
+            for (int i = 0; i < item.getValueSets().size(); i++) {
+                ValueSet valueSet = item.getValueSets().get(i);
+                valueSet.setCreated();
+                for (ValueSetValue e : valueSet.getValues().values()) {
+                    if (keys.contains(e.getKey())) {
+                        continue;
+                    }
+                    if (!first) {
+                        ps.println(",");
+                    }
+                    ps.print("    (\'" + e.getKey() + "\',N\'" + e.getValue().replace("\'", "\'\'") + "\')");
+                    keys.add(e.getKey());
+                    first = false;
+                }
+            }
+            ps.println(";");
+            ps.println();
+        }
+        for (Item subItem : item.getSubItems()) {
+            printValueSetSqlserver(schema, subItem, ps);
+        }
+    }
 }

@@ -53,9 +53,11 @@ public class LoaderEngine {
 
     public static void main(String[] args) {
         Properties prop = new Properties();
+        
         try (InputStream in = LoaderEngine.class.getResourceAsStream("/database.properties")) {
             prop.load(in);
         } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, "Cannot read properties file", ex);
             return;
         }
         try {
@@ -63,6 +65,7 @@ public class LoaderEngine {
                     prop.getProperty("db.dest.schema"),
                     prop.getProperty("dictionary"),
                     prop.getProperty("dictionary.prefix"));
+            
             execute(dictionaries, prop, true, true, false, true, false, null);
         } catch (Exception ex) {
             System.exit(1);
@@ -87,8 +90,16 @@ public class LoaderEngine {
                     connSrc.setReadOnly(true);
 
                     //Connect to the destination database
+                    String destConnString;
+                    if("sqlserver".equals(prop.getProperty("db.dest.type"))){
+                        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver").newInstance();
+                        destConnString = prop.getProperty("db.dest.uri") + ";databasename=" + dictionary.getSchema();
+                    } else {
+                        destConnString = prop.getProperty("db.dest.uri") + "/" + dictionary.getSchema() + "?autoReconnect=true&useSSL=false";
+                    }
+                    
                     try (Connection connDst = DriverManager.getConnection(
-                            prop.getProperty("db.dest.uri") + "/" + dictionary.getSchema() + "?autoReconnect=true&useSSL=false",
+                            destConnString,
                             prop.getProperty("db.dest.username"),
                             prop.getProperty("db.dest.password"))) {
                         connDst.setAutoCommit(false);

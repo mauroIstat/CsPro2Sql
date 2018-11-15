@@ -55,7 +55,7 @@ public class Main {
         }
 
         if (opts.schemaEngine) {
-            error = !SchemaEngine.execute(dictionaries, opts.foreignKeys, opts.ps);
+            error = !SchemaEngine.execute(dictionaries, opts.prop, opts.foreignKeys, opts.ps);
         } else if (opts.loaderEngine) {
             if (opts.delay == null) {
                 error = !LoaderEngine.execute(dictionaries, opts.prop, opts.allRecords, opts.checkConstraints, opts.checkOnly, opts.force, opts.recovery, opts.ps);
