@@ -84,8 +84,8 @@ public class SchemaWriter {
         ps.println();
 
         try {
-            tm.printTemplate("/sqlserver/cspro2sql_dictionary", ps);
-            tm.printTemplate("/sqlserver/cspro2sql_error", ps);
+            tm.printTemplate("sqlserver/cspro2sql_dictionary", ps);
+            tm.printTemplate("sqlserver/cspro2sql_error", ps);
         } catch (IOException ex) {
             return;
         }
