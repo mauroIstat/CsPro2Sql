@@ -43,7 +43,7 @@ public class QuestionnaireReader {
             parseItem(item, rows[0], values);
         }
         for (String row : rows) {
-            record = dictionary.getRecord(row.substring(dictionary.getRecordTypeStart() - 1, dictionary.getRecordTypeStart() - 1 + dictionary.getRecordTypeLength()));
+            record = dictionary.getRecord(getRecordType(dictionary, row));
             valuesList = result.getRecordValues(record);
             if (valuesList == null) {
                 valuesList = new LinkedList<>();
@@ -58,6 +58,17 @@ public class QuestionnaireReader {
         return result;
     }
 
+    private static String getRecordType(Dictionary dictionary, String dataRow)
+    {
+        if (dictionary.getRecordTypeLength() == 0) {
+            // Dictionaries with only one record may omit the record type
+            // by setting record length to zero.
+            return "";
+        } else {
+            return dataRow.substring(dictionary.getRecordTypeStart() - 1, dictionary.getRecordTypeStart() - 1 + dictionary.getRecordTypeLength());
+        }
+    }
+    
     private static void parseItem(Item item, String row, List<Answer> values) {
         if (row.length() < item.getStart()) {
             values.add(new Answer(item, null));
